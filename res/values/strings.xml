@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Swingset</string>
+    <string name="playground_name">Playground Name</string>
+    <string name="add_shortcut">a</string>
+    <string name="add_label">Add</string>
+    <string name="addplayground_title">Add Playground</string>
+    <string name="addbutton_label">Add</string>
 </resources>

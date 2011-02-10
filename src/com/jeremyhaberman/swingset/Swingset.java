@@ -1,102 +1,106 @@
 package com.jeremyhaberman.swingset;
 
-import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
-import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
-
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
-import android.location.Address;
-import android.location.Geocoder;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 public class Swingset extends MapActivity {
 	
 	List<Overlay> mapOverlays;
-	PlaygroundsLayer playgoundsLayer;
+	PlaygroundsLayer playgroundsLayer;
 	public static Context context;
 	private MapView map;
 	private MapController controller;
+	PlaygroundDAO playgroundDAO;
+	MyLocationOverlay overlay;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = this;
+        playgroundDAO = new SQLitePlaygroundDAO(this);
         setContentView(R.layout.main);
         initMapView();
         initMyLocation();
-        showPlaygoundsLayer();
+        showPlaygounds();
     }
     
-    
-
-	private void showPlaygoundsLayer() {
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
-		playgoundsLayer = new PlaygroundsLayer(drawable);
-		
-		List<Address> addresses;
-		String myAddress = "201 West 49th Street, Minneapolis, MN";
-		
-		int geolat = 0;
-		int geolon = 0;
-		
-		Geocoder geocoder = new Geocoder(this);
-		try {
-			addresses = geocoder.getFromLocationName(myAddress, 1);
-			if(addresses != null & addresses.size() > 0) {
-				Address x = addresses.get(0);
-				
-				geolat = (int) (x.getLatitude()*1E6);
-				geolon = (int) (x.getLongitude()*1E6);
-			} else {
-				String bug = "this is it";
-			}
-		} catch (IOException e) {
-			// TODO handle error
-		}
-		
-//		GeoPoint point = new GeoPoint(geolat, geolon);
-		
-		// my house
-		int myHouseLat = 44903865;
-		int myHouseLon = -93256703;
-		GeoPoint myHouse = new GeoPoint(myHouseLat, myHouseLon);
-		
-		OverlayItem myHouseItem = new OverlayItem(myHouse, "My Home", "This is my house");
-		playgoundsLayer.addOverlayItem(myHouseItem);
-		
-		// Washburn
-		int washburnLat = 44914174;
-		int washburnLon = -93281705;
-		GeoPoint washburn = new GeoPoint(washburnLat, washburnLon);
-		
-		OverlayItem washburnItem = new OverlayItem(washburn, "Washburn", "This is Jenny's ghetto school");
-		playgoundsLayer.addOverlayItem(washburnItem);
-		
-		
-		mapOverlays.add(playgoundsLayer);
+    @Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu, menu);
+		return true;
 	}
 
 
 
 	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		super.onOptionsItemSelected(item);
+		switch (item.getItemId()) {
+		case R.id.add:
+			startActivity(new Intent(this, AddPlayground.class));
+			return true;
+		}
+		return false;
+	}
+
+	private void showPlaygounds() {
+		if(mapOverlays == null)
+		{
+			mapOverlays = map.getOverlays();
+			Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
+			if (playgroundsLayer == null)
+			{
+				playgroundsLayer = new PlaygroundsLayer(drawable);
+				addPlaygroundsToLayer(playgroundsLayer);
+				mapOverlays.add(playgroundsLayer);
+			}
+		}
+	}
+	
+	private void addPlaygroundsToLayer(PlaygroundsLayer playgroundsLayer) {
+		
+		Collection<Playground> allPlaygrounds = playgroundDAO.getAll();
+		
+		if(allPlaygrounds != null)
+		{
+			Collection<PlaygroundItem> playgroundItems = PlaygroundItemCreator.createItems(allPlaygrounds);
+		
+			for (PlaygroundItem item : playgroundItems)
+			{
+				playgroundsLayer.addOverlayItem(item);
+			}
+		}
+	}
+	
+	@Override
+	protected void onPause() {
+		overlay.disableMyLocation();
+		playgroundsLayer = null;
+		super.onPause();
+	}
+
+	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
 		initMapView();
 		initMyLocation();
-		showPlaygoundsLayer();
+		showPlaygounds();
 	}
-
-
 
 	@Override
 	protected boolean isRouteDisplayed() {
@@ -110,7 +114,10 @@ public class Swingset extends MapActivity {
 	}
 	
 	private void initMyLocation() {
-		final MyLocationOverlay overlay = new MyLocationOverlay(this, map);
+		if(overlay == null)
+		{
+			overlay = new MyLocationOverlay(this, map);
+		}
 		overlay.enableMyLocation();
 		overlay.runOnFirstFix(new Runnable() {
 			
@@ -123,6 +130,4 @@ public class Swingset extends MapActivity {
 		});
 		map.getOverlays().add(overlay);
 	}
-	
-	
 }

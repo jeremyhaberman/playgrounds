@@ -16,6 +16,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".AddPlayground"
+        		  android:label="@string/addplayground_title" />
 		<uses-library android:name="com.google.android.maps" />
     </application>
 </manifest>
