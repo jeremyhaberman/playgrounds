@@ -1,44 +1,43 @@
 package com.jeremyhaberman.swingset;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 
 public class AddPlayground extends Activity implements OnClickListener {
-	
-	private EditText name;
-	private EditText description;
-	private EditText latitude;
-	private EditText longitude;
-	private View addButton;
+	private static final String TAG = "AddPlayground";
+	private View addCurrentLocationButton;
+	private View addByAddressButton;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.addplayground);
         
-        name = (EditText) findViewById(R.id.name);
-        description = (EditText) findViewById(R.id.description);
-        latitude = (EditText) findViewById(R.id.latitude);
-        longitude = (EditText) findViewById(R.id.longitude);
+        addCurrentLocationButton = findViewById(R.id.add_current_location_button);
+        addCurrentLocationButton.setOnClickListener(this);
         
-        addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(this);
+//        addByAddressButton = findViewById(R.id.add_by_address_button);
+//        addByAddressButton.setOnClickListener(this);
     }
 
 	@Override
 	public void onClick(View v) {
-		
-		String nameStr = name.getText().toString().trim();
-		String descriptionStr = description.getText().toString().trim();
-		int latitudeInt = Integer.parseInt(latitude.getText().toString().trim());
-		int longitudeInt = Integer.parseInt(longitude.getText().toString().trim());
-		
-		PlaygroundDAO playgroundDao = new SQLitePlaygroundDAO(this);
-		playgroundDao.createPlayground(nameStr, descriptionStr, latitudeInt, longitudeInt);
-		
-		finish();
+		switch (v.getId()) {
+		case R.id.add_current_location_button:
+			Intent i = new Intent(this, AddCurrentLocation.class);
+			startActivity(i);
+			break;
+//		case R.id.add_by_address_button:
+//			Intent i = new Intent(this, AddByAddress.class);
+//			startActivity(i);
+//			break;
+		}
 	}
 }
