@@ -2,7 +2,6 @@ package com.jeremyhaberman.swingset;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,8 +15,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 
-public class AddCurrentLocation extends Activity implements OnClickListener,
-		Runnable {
+public class AddCurrentLocation extends Activity implements OnClickListener, Runnable {
 
 	private EditText nameText;
 	private EditText descriptionText;
@@ -60,12 +58,18 @@ public class AddCurrentLocation extends Activity implements OnClickListener,
 			String result;
 			if(message.what == 0) {
 				result = "Playground added.";
+				Swingset.setNewPlaygrounds(true);
 			} else {
 				result = "Failed to add playground.";
 			}
-			
 			showResult(result);
 			
+		}
+	};
+	
+	final Runnable goHome = new Runnable() {
+		public void run() {
+			goHome();
 		}
 	};
 
@@ -74,16 +78,19 @@ public class AddCurrentLocation extends Activity implements OnClickListener,
 		addCurrentLocation();
 	}
 
+	protected void goHome() {
+		Intent i = new Intent(this, Swingset.class);
+		startActivity(i);
+	}
+
 	protected void showResult(String result) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(result);
 		builder.setCancelable(false);
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				AddCurrentLocation.this.finish();
-
 			}
 		});
 		AlertDialog dialog = builder.create();
@@ -100,5 +107,6 @@ public class AddCurrentLocation extends Activity implements OnClickListener,
 		int result = playgroundDAO.createPlayground(name, description,
 				latitude, longitude);
 		handler.sendEmptyMessage(result);
+//		handler.post(goHome);
 	}
 }

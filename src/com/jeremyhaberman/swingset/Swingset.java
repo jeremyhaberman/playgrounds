@@ -1,6 +1,8 @@
 package com.jeremyhaberman.swingset;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,34 +34,119 @@ public class Swingset extends MapActivity {
 	PlaygroundDAO playgroundDAO;
 	MyLocationOverlay overlay;
 	ProgressDialog progressDialog;
+	protected static List<Playground> mPlaygrounds;
+	Object initPlaygroundLock = new Object();
+	static boolean initializing = true;
+	Thread initPlaygroundsThread;
+
+	protected static boolean mNewPlaygrounds = true;
+
+	protected static void setNewPlaygrounds(boolean newPlaygrounds) {
+		mNewPlaygrounds = newPlaygrounds;
+	}
+
+	final Handler mHandler = new Handler() {
+		public void handleMessage(Message message) {
+			progressDialog.dismiss();
+		}
+	};
+
+	final Runnable mUpdateResults = new Runnable() {
+		public void run() {
+			showPlaygroundsOnMap();
+		}
+	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		context = this;
-		// playgroundDAO = new SQLitePlaygroundDAO(this);
 		playgroundDAO = new WebPlaygroundDAO(this);
 		setContentView(R.layout.main);
 		// initMapView();
 		// initMyLocation();
-		// showPlaygounds();
+		// initPlaygrounds();
+	}
+
+	protected void initPlaygrounds() {
+		
+		removePlaygroundsOnMap();
+
+		progressDialog = ProgressDialog.show(Swingset.this, "",
+				"Loading playgrounds...", true);
+		progressDialog.show();
+
+		initPlaygroundsThread = new Thread() {
+			public void run() {
+				setPlaygrounds(getPlaygrounds());
+				mHandler.post(mUpdateResults);
+				
+			}
+		};
+		initPlaygroundsThread.start();
+	}
+
+	protected static void setPlaygrounds(List<Playground> playgrounds) {
+		mPlaygrounds = playgrounds;
+	}
+
+	protected List<Playground> getPlaygrounds() {
+
+		return new ArrayList<Playground>(playgroundDAO.getAll());
+
+	}
+
+	protected void showPlaygroundsOnMap() {
+
+		if (mPlaygrounds != null) {
+			mapOverlays = map.getOverlays();
+			Drawable drawable = this.getResources().getDrawable(R.drawable.pin);
+			playgroundsLayer = new PlaygroundsLayer(drawable);
+
+			Collection<PlaygroundItem> playgroundItems = PlaygroundItemCreator
+					.createItems(mPlaygrounds);
+
+			for (PlaygroundItem item : playgroundItems) {
+				playgroundsLayer.addOverlayItem(item);
+			}
+			mapOverlays.add(playgroundsLayer);
+			initializing = false;
+			mNewPlaygrounds = false;
+			
+			mHandler.sendEmptyMessage(0);
+		}
+	}
+
+	private void removePlaygroundsOnMap() {
+		mapOverlays = map.getOverlays();
+		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
+		if (playgroundsLayer != null) {
+			mapOverlays.remove(playgroundsLayer);
+		}
 	}
 
 	@Override
 	protected void onResume() {
-		paused = false;
 		super.onResume();
 		initMapView();
 		initMyLocation();
-		showPlaygounds();
-		
+		initPlaygrounds();
+	}
+
+	private void refreshPlaygrounds() {
+		if (!initializing && mNewPlaygrounds) {
+			removePlaygroundsOnMap();
+			initPlaygrounds();
+		}
 	}
 
 	@Override
 	protected void onPause() {
-		paused = true;
-		hidePlaygrounds();
+		if (initPlaygroundsThread.isAlive()) {
+			initPlaygroundsThread.interrupt();
+		}
 		overlay.disableMyLocation();
+		// removePlaygroundsOnMap();
 		super.onPause();
 	}
 
@@ -80,58 +167,6 @@ public class Swingset extends MapActivity {
 			return true;
 		}
 		return false;
-	}
-
-	private void showPlaygounds() {
-		
-		progressDialog = ProgressDialog.show(Swingset.this, "", "Loading playgrounds...", true);
-		progressDialog.show();
-		
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.pin);
-		// if (playgroundsLayer == null) {
-		playgroundsLayer = new PlaygroundsLayer(drawable);
-
-		Thread getPlaygroundsThread = new Thread(new Runnable() {
-			public void run() {
-				addPlaygroundsToLayer();
-				handler.sendEmptyMessage(0);
-			}
-		});
-		getPlaygroundsThread.start();
-	}
-	
-	private Handler handler = new Handler() {
-		public void handleMessage(Message message) {
-			progressDialog.dismiss();
-		}
-	};
-	
-	boolean paused = false;
-
-	private void addPlaygroundsToLayer() {
-
-		if (!paused) {
-			Collection<Playground> allPlaygrounds = playgroundDAO.getAll();
-
-			if (allPlaygrounds != null) {
-				Collection<PlaygroundItem> playgroundItems = PlaygroundItemCreator
-						.createItems(allPlaygrounds);
-
-				for (PlaygroundItem item : playgroundItems) {
-					playgroundsLayer.addOverlayItem(item);
-				}
-				mapOverlays.add(playgroundsLayer);
-			}
-		}
-	}
-
-	private void hidePlaygrounds() {
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
-		if (playgroundsLayer != null) {
-			mapOverlays.remove(playgroundsLayer);
-		}
 	}
 
 	@Override

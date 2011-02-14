@@ -12,6 +12,7 @@ import android.widget.EditText;
 
 public class AddPlayground extends Activity implements OnClickListener {
 	private static final String TAG = "AddPlayground";
+	private static final int PLAYGROUND_ADDED = 0;
 	private View addCurrentLocationButton;
 	private View addByAddressButton;
 	
@@ -26,13 +27,15 @@ public class AddPlayground extends Activity implements OnClickListener {
 //        addByAddressButton = findViewById(R.id.add_by_address_button);
 //        addByAddressButton.setOnClickListener(this);
     }
+	
+	
 
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.add_current_location_button:
-			Intent i = new Intent(this, AddCurrentLocation.class);
-			startActivity(i);
+			Intent intent = new Intent(this, AddCurrentLocation.class);
+			startActivityForResult(intent, PLAYGROUND_ADDED);
 			break;
 //		case R.id.add_by_address_button:
 //			Intent i = new Intent(this, AddByAddress.class);
@@ -40,4 +43,11 @@ public class AddPlayground extends Activity implements OnClickListener {
 //			break;
 		}
 	}
+	
+	protected void onActivityResult(int requestCode, int resultCode,
+            Intent data) {
+        if (requestCode == PLAYGROUND_ADDED) {
+            startActivity(new Intent(this, Swingset.class));
+        }
+    }
 }

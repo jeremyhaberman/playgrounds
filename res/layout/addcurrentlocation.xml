@@ -8,12 +8,23 @@
     	android:layout_height="fill_parent"
     	android:stretchColumns="1"
     	android:padding="10dip" >
-    	<EditText
-    		android:id="@+id/name"
-    		android:layout_height="wrap_content"/>
-    	<EditText
-    		android:id="@+id/description"
-    		android:layout_height="wrap_content" />
+   		<TextView
+   			android:id="@+id/name_label"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:text="@string/name_label" />
+   		<EditText
+   			android:id="@+id/name"
+   			android:layout_height="wrap_content"
+   			android:layout_width="wrap_content" />	    		
+   		<TextView
+   			android:id="@+id/description_label"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:text="@string/description_label" />
+   		<EditText
+   			android:id="@+id/description"
+   			android:layout_height="wrap_content" android:layout_width="wrap_content"/>	    		
     	<Button
 			android:id="@+id/add_button"
 			android:layout_width="fill_parent"

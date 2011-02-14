@@ -88,7 +88,7 @@ public class WebPlaygroundDAO implements PlaygroundDAO {
 	public Collection<Playground> getAll() {
 		playgrounds = new ArrayList<Playground>();
 		String result = swingset.getResources().getString(R.string.error);
-		HttpURLConnection con = null;
+		HttpURLConnection httpConnection = null;
 		Log.d(TAG, "getPlaygrounds()");
 		
 		try {
@@ -99,28 +99,25 @@ public class WebPlaygroundDAO implements PlaygroundDAO {
 			
 			// Build query
 			URL url = new URL("http://swingsetweb.appspot.com/playground");
-			con = (HttpURLConnection) url.openConnection();
-			con.setReadTimeout(10000);
-			con.setConnectTimeout(15000);
-			con.setRequestMethod("GET");
-			con.setDoInput(true);
+			httpConnection = (HttpURLConnection) url.openConnection();
+			httpConnection.setConnectTimeout(15000);
+			httpConnection.setReadTimeout(15000);
+			StringBuilder response = new StringBuilder();
 			
-			// Start the query
-			con.connect();
-			
-			// Check if task has been interrupted
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
+			if(httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				// Read results from the query
+				BufferedReader input = new BufferedReader(
+					new InputStreamReader(httpConnection.getInputStream(), "UTF-8"));
+				String strLine = null;
+				while((strLine = input.readLine()) != null) {
+					response.append(strLine);
+				}
+				input.close();
+				
 			}
 			
-			// Read results from the query
-			BufferedReader reader = new BufferedReader(
-				new InputStreamReader(con.getInputStream(), "UTF-8"));
-			String payload = reader.readLine();
-			reader.close();
-			
 			// Parse to get translated text
-			JSONArray jsonPlaygrounds = new JSONArray(payload);
+			JSONArray jsonPlaygrounds = new JSONArray(response.toString());
 			int numOfPlaygrounds = jsonPlaygrounds.length();
 			
 			JSONObject jsonPlayground = null;
@@ -138,8 +135,8 @@ public class WebPlaygroundDAO implements PlaygroundDAO {
 		} catch (JSONException e) {
 			Log.e(TAG, "JSONException", e);
 		} finally {
-			if (con != null) {
-				con.disconnect();
+			if (httpConnection != null) {
+				httpConnection.disconnect();
 			}
 		}
 		
