@@ -79,8 +79,9 @@ public class AddCurrentLocation extends Activity implements OnClickListener, Run
 	}
 
 	protected void goHome() {
-		Intent i = new Intent(this, Swingset.class);
-		startActivity(i);
+		Intent goHomeIntent = new Intent(this, Swingset.class);
+		goHomeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		startActivity(goHomeIntent);
 	}
 
 	protected void showResult(String result) {

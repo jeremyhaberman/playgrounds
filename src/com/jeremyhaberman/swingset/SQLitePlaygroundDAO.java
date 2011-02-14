@@ -66,7 +66,7 @@ public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 	}
 
 	@Override
-	public boolean deletePlayground(int id) {
+	public boolean deletePlayground(Context context, int id) {
 		throw new RuntimeException("Not implemented");
 	}
 	
@@ -74,7 +74,7 @@ public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 	private static String ORDER_BY = NAME;
 
 	@Override
-	public Collection<Playground> getAll()
+	public Collection<Playground> getAll(Context context)
 	{
 		Collection<Playground> allPlaygrounds = new ArrayList<Playground>();
 		try
