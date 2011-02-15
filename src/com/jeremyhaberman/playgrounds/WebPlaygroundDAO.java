@@ -1,3 +1,18 @@
+/*
+ * Copyright 2011 Jeremy Haberman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License. 
+ */
 package com.jeremyhaberman.playgrounds;
 
 import java.io.BufferedReader;
@@ -92,65 +107,65 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 
 	@Override
 	public Collection<Playground> getAll(Context context) {
-//		synchronized (Swingset.initPlaygroundLock) {
-			playgrounds = new ArrayList<Playground>();
-			String result = swingset.getResources().getString(R.string.error);
-			HttpURLConnection httpConnection = null;
-			Log.d(TAG, "getPlaygrounds()");
+		// synchronized (Swingset.initPlaygroundLock) {
+		playgrounds = new ArrayList<Playground>();
+		String result = swingset.getResources().getString(R.string.error);
+		HttpURLConnection httpConnection = null;
+		Log.d(TAG, "getPlaygrounds()");
 
-			try {
-				// Check if task has been interrupted
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-
-				// Build query
-				URL url = new URL("http://swingsetweb.appspot.com/playground");
-				httpConnection = (HttpURLConnection) url.openConnection();
-				httpConnection.setConnectTimeout(15000);
-				httpConnection.setReadTimeout(15000);
-				StringBuilder response = new StringBuilder();
-
-				if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-					// Read results from the query
-					BufferedReader input = new BufferedReader(
-							new InputStreamReader(
-									httpConnection.getInputStream(), "UTF-8"));
-					String strLine = null;
-					while ((strLine = input.readLine()) != null) {
-						response.append(strLine);
-					}
-					input.close();
-
-				}
-
-				// Parse to get translated text
-				JSONArray jsonPlaygrounds = new JSONArray(response.toString());
-				int numOfPlaygrounds = jsonPlaygrounds.length();
-
-				JSONObject jsonPlayground = null;
-
-				for (int i = 0; i < numOfPlaygrounds; i++) {
-					jsonPlayground = jsonPlaygrounds.getJSONObject(i);
-					playgrounds.add(toPlayground(jsonPlayground));
-				}
-
-			} catch (Exception e) {
-				Log.e(TAG, "Exception", e);
-				Intent errorIntent = new Intent(context, Playgrounds.class);
-				errorIntent.putExtra("Exception", e.getLocalizedMessage());
-				errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-				context.startActivity(errorIntent);
-			} finally {
-				if (httpConnection != null) {
-					httpConnection.disconnect();
-				}
+		try {
+			// Check if task has been interrupted
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
 			}
 
-			// all done
-			Log.d(TAG, "   -> returned " + result);
-			return playgrounds;
-//		}
+			// Build query
+			URL url = new URL("http://swingsetweb.appspot.com/playground");
+			httpConnection = (HttpURLConnection) url.openConnection();
+			httpConnection.setConnectTimeout(15000);
+			httpConnection.setReadTimeout(15000);
+			StringBuilder response = new StringBuilder();
+
+			if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+				// Read results from the query
+				BufferedReader input = new BufferedReader(
+						new InputStreamReader(httpConnection.getInputStream(),
+								"UTF-8"));
+				String strLine = null;
+				while ((strLine = input.readLine()) != null) {
+					response.append(strLine);
+				}
+				input.close();
+
+			}
+
+			// Parse to get translated text
+			JSONArray jsonPlaygrounds = new JSONArray(response.toString());
+			int numOfPlaygrounds = jsonPlaygrounds.length();
+
+			JSONObject jsonPlayground = null;
+
+			for (int i = 0; i < numOfPlaygrounds; i++) {
+				jsonPlayground = jsonPlaygrounds.getJSONObject(i);
+				playgrounds.add(toPlayground(jsonPlayground));
+			}
+
+		} catch (Exception e) {
+			Log.e(TAG, "Exception", e);
+			Intent errorIntent = new Intent(context, Playgrounds.class);
+			errorIntent.putExtra("Exception", e.getLocalizedMessage());
+			errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			context.startActivity(errorIntent);
+		} finally {
+			if (httpConnection != null) {
+				httpConnection.disconnect();
+			}
+		}
+
+		// all done
+		Log.d(TAG, "   -> returned " + result);
+		return playgrounds;
+		// }
 	}
 
 	protected void setPlaygrounds(Collection<Playground> playgrounds) {
