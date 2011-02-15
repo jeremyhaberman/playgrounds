@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,10 +32,10 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 
 	private static final String TAG = "WebPlaygroundDAO";
 	private Collection<Playground> playgrounds;
-	private Swingset swingset;
+	private Playgrounds swingset;
 	private Context context;
 
-	WebPlaygroundDAO(Swingset swingset) {
+	WebPlaygroundDAO(Playgrounds swingset) {
 		this.swingset = swingset;
 	}
 
@@ -138,7 +138,7 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 
 			} catch (Exception e) {
 				Log.e(TAG, "Exception", e);
-				Intent errorIntent = new Intent(context, Swingset.class);
+				Intent errorIntent = new Intent(context, Playgrounds.class);
 				errorIntent.putExtra("Exception", e.getLocalizedMessage());
 				errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 				context.startActivity(errorIntent);

@@ -1,11 +1,11 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import static android.provider.BaseColumns._ID;
-import static com.jeremyhaberman.swingset.Constants.DESCRIPTION;
-import static com.jeremyhaberman.swingset.Constants.LATITUDE;
-import static com.jeremyhaberman.swingset.Constants.LONGITUDE;
-import static com.jeremyhaberman.swingset.Constants.NAME;
-import static com.jeremyhaberman.swingset.Constants.TABLE_NAME;
+import static com.jeremyhaberman.playgrounds.Constants.DESCRIPTION;
+import static com.jeremyhaberman.playgrounds.Constants.LATITUDE;
+import static com.jeremyhaberman.playgrounds.Constants.LONGITUDE;
+import static com.jeremyhaberman.playgrounds.Constants.NAME;
+import static com.jeremyhaberman.playgrounds.Constants.TABLE_NAME;
 
 import java.util.ArrayList;
 import java.util.Collection;

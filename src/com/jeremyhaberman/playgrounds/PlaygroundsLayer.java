@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import java.util.ArrayList;
 import android.app.AlertDialog;
@@ -33,7 +33,7 @@ public class PlaygroundsLayer extends ItemizedOverlay<PlaygroundItem> {
 	@Override
 	protected boolean onTap(int index) {
 		AlertDialog.Builder dialog = 
-			new AlertDialog.Builder(Swingset.context);
+			new AlertDialog.Builder(Playgrounds.context);
 		dialog.setTitle(playgrounds.get(index).getTitle());
 		dialog.setMessage(playgrounds.get(index).getSnippet());
 		dialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {			

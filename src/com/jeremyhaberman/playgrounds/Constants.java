@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import android.provider.BaseColumns;
 

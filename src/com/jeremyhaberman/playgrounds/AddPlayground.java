@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -47,7 +47,7 @@ public class AddPlayground extends Activity implements OnClickListener {
 	protected void onActivityResult(int requestCode, int resultCode,
             Intent data) {
         if (requestCode == PLAYGROUND_ADDED) {
-            startActivity(new Intent(this, Swingset.class));
+            startActivity(new Intent(this, Playgrounds.class));
         }
     }
 }

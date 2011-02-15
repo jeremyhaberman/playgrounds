@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 public class Playground {
 

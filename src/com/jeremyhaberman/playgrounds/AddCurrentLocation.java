@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -58,7 +58,7 @@ public class AddCurrentLocation extends Activity implements OnClickListener, Run
 			String result;
 			if(message.what == 0) {
 				result = "Playground added.";
-				Swingset.setNewPlaygrounds(true);
+				Playgrounds.setNewPlaygrounds(true);
 			} else {
 				result = "Failed to add playground.";
 			}
@@ -79,7 +79,7 @@ public class AddCurrentLocation extends Activity implements OnClickListener, Run
 	}
 
 	protected void goHome() {
-		Intent goHomeIntent = new Intent(this, Swingset.class);
+		Intent goHomeIntent = new Intent(this, Playgrounds.class);
 		goHomeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(goHomeIntent);
 	}

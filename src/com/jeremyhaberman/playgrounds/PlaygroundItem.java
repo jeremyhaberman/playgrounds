@@ -1,4 +1,4 @@
-package com.jeremyhaberman.swingset;
+package com.jeremyhaberman.playgrounds;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.OverlayItem;
