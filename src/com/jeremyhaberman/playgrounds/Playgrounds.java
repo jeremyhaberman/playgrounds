@@ -2,8 +2,6 @@ package com.jeremyhaberman.playgrounds;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.android.maps.MapActivity;
@@ -20,14 +18,13 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 /**
- * Swingset is the entry and primary Activity. It displays the map, the user's
+ * Playgrounds is the entry and primary Activity. It displays the map, the user's
  * current location and all playgrounds
  * 
  * @author jeremyhaberman
@@ -46,6 +43,7 @@ public class Playgrounds extends MapActivity {
 	private ProgressDialog progressDialog;
 	protected static final int ERROR_LOADING_PLAYGROUNDS = 1;
 	protected static final CharSequence ERROR_LOADING_PLAYGROUNDS_STRING = "Error loading playgrounds.";
+	private static final String LOADING_NEARBY_PLAYGROUNDS = "Loading nearby playgrounds";
 	protected static List<Playground> mPlaygrounds;
 	protected static boolean initializing = true;
 	protected static boolean mNewPlaygrounds = true;
@@ -86,7 +84,6 @@ public class Playgrounds extends MapActivity {
 			public void run() {
 				controller.setZoom(13);
 				controller.animateTo(overlay.getMyLocation());
-
 			}
 		});
 
@@ -100,7 +97,7 @@ public class Playgrounds extends MapActivity {
 	protected void showPlaygrounds() {
 
 		progressDialog = ProgressDialog.show(Playgrounds.this, "",
-				"Loading playgrounds...", true);
+				LOADING_NEARBY_PLAYGROUNDS, true);
 		progressDialog.show();
 
 		Thread getPlaygroundsFromWebThread = new Thread() {

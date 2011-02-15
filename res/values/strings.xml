@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Swingset</string>
+    <string name="app_name">Playgrounds</string>
     <string name="playground_name">Playground Name</string>
     <string name="add_shortcut">a</string>
-    <string name="add_label">Add</string>
+    <string name="add_label">Add Playground</string>
     <string name="add_playground_title">Add Playground</string>
     <string name="add_current_location_title">Add Current Location</string>
     <string name="addbutton_label">Add</string>
@@ -12,4 +12,5 @@
     <string name="error">Error</string>
     <string name="interrupted_error">Connection interrupted</string>
     <string name="add_current_location_button_label">Add current location</string>
+    <string name="loading_nearby_playgrounds">"Loading nearby playgrounds..."</string>
 </resources>

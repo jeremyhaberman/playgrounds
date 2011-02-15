@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -75,6 +76,8 @@ public class AddCurrentLocation extends Activity implements OnClickListener, Run
 
 	@Override
 	public void run() {
+		Looper.prepare();
+//		Looper.loop();
 		addCurrentLocation();
 	}
 
