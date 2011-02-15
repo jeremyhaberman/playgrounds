@@ -25,12 +25,15 @@ import static com.jeremyhaberman.playgrounds.Constants.TABLE_NAME;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import com.google.android.maps.GeoPoint;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.location.Location;
 
 public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 		PlaygroundDAO {
@@ -139,4 +142,16 @@ public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 	private static final int DESCRIPTION_INDEX = 2;
 	private static final int LATITUDE_INDEX = 3;
 	private static final int LONGITUDE_INDEX = 4;
+
+	@Override
+	public Collection<Playground> getNearby(Context context,
+			GeoPoint location, int maxQuantity) {
+		throw new RuntimeException("Not implemented");
+	}
+
+	@Override
+	public Collection<? extends Playground> getWithin(Context context,
+			GeoPoint topLeft, GeoPoint bottomRight, int maxQuantity) {
+		throw new RuntimeException("Not implemented");
+	}
 }

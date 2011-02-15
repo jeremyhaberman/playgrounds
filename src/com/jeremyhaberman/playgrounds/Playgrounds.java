@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
@@ -31,12 +32,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 /**
  * Playgrounds is the entry and primary Activity. It displays the map, the user's
@@ -59,9 +64,11 @@ public class Playgrounds extends MapActivity {
 	protected static final int ERROR_LOADING_PLAYGROUNDS = 1;
 	protected static final CharSequence ERROR_LOADING_PLAYGROUNDS_STRING = "Error loading playgrounds.";
 	private static final String LOADING_NEARBY_PLAYGROUNDS = "Loading nearby playgrounds";
+	private static final int MAX_QUANTITY = 10;
 	protected static List<Playground> mPlaygrounds;
 	protected static boolean initializing = true;
 	protected static boolean mNewPlaygrounds = true;
+	private GeoPoint myLocation = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -69,9 +76,9 @@ public class Playgrounds extends MapActivity {
 		context = this;
 		playgroundDAO = new WebPlaygroundDAO(this);
 		setContentView(R.layout.map);
-		initMapView();
-		showMyLocation();
-		showPlaygrounds();
+//		initMapView();
+//		showMyLocation();
+//		showPlaygrounds();
 	}
 
 	/**
@@ -98,7 +105,9 @@ public class Playgrounds extends MapActivity {
 			@Override
 			public void run() {
 				controller.setZoom(13);
-				controller.animateTo(overlay.getMyLocation());
+				myLocation = overlay.getMyLocation();
+				controller.animateTo(myLocation);
+				mHandler.post(fetchAndShowPlaygrounds);
 			}
 		});
 
@@ -118,7 +127,8 @@ public class Playgrounds extends MapActivity {
 		Thread getPlaygroundsFromWebThread = new Thread() {
 			public void run() {
 				synchronized (initPlaygroundLock) {
-					setPlaygrounds(loadPlaygroundData());
+					setPlaygrounds(loadNearbyPlaygroundData());
+//					setPlaygrounds(loadVisiblePlaygroundData());
 					if (mPlaygrounds.size() == 0) {
 						mHandler.post(displayErrorTask);
 					} else {
@@ -141,6 +151,13 @@ public class Playgrounds extends MapActivity {
 			addPlaygroundsLayerToMap();
 		}
 	};
+	
+	final Runnable fetchAndShowPlaygrounds = new Runnable() {
+		public void run() {
+			showPlaygrounds();
+		}
+	};
+	
 
 	/**
 	 * Displays an error if the playground data was not successfully loaded by
@@ -195,10 +212,38 @@ public class Playgrounds extends MapActivity {
 	 * 
 	 * @return
 	 */
-	protected List<Playground> loadPlaygroundData() {
+	protected List<Playground> loadNearbyPlaygroundData() {
+		
+//		LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+//		Criteria criteria = new Criteria();
+//		criteria.setAccuracy(Criteria.ACCURACY_FINE);
+//		String provider = manager.getBestProvider(criteria, true);
+//		Location myLocation = manager.getLastKnownLocation(provider);
+		
+//		GeoPoint centerOfMap = map.getMapCenter();
+		
 		List<Playground> playgrounds = new ArrayList<Playground>(
-				playgroundDAO.getAll(this));
+				playgroundDAO.getNearby(this, myLocation, MAX_QUANTITY ));
 		return playgrounds;
+	}
+	
+	protected List<Playground> loadVisiblePlaygroundData() {
+		
+		GeoPoint centerOfMap = map.getMapCenter();
+		
+		int latitudeSpan = map.getLatitudeSpan();
+		int longitudeSpan = map.getLongitudeSpan();
+		
+		GeoPoint topLeft = new GeoPoint(centerOfMap.getLatitudeE6() + (latitudeSpan / 2),
+										centerOfMap.getLongitudeE6() + (longitudeSpan / 2));
+		
+		GeoPoint bottomRight = new GeoPoint(centerOfMap.getLatitudeE6() - (latitudeSpan / 2),
+											centerOfMap.getLongitudeE6() - (longitudeSpan / 2));
+		
+		List<Playground> playgrounds = new ArrayList<Playground>(
+				playgroundDAO.getWithin(this, topLeft, bottomRight, MAX_QUANTITY ));
+		return playgrounds;
+		
 	}
 
 	/**
@@ -257,6 +302,7 @@ public class Playgrounds extends MapActivity {
 			super.onResume();
 			initMapView();
 			showMyLocation();
+//			showPlaygrounds();
 
 			Bundle errorBundle = getIntent().getExtras();
 
@@ -270,7 +316,7 @@ public class Playgrounds extends MapActivity {
 	@Override
 	protected void onPause() {
 		overlay.disableMyLocation();
-		// removePlaygroundsOnMap();
+		removePlaygroundsOnMap();
 		super.onPause();
 	}
 

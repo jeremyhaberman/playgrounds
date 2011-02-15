@@ -17,7 +17,10 @@ package com.jeremyhaberman.playgrounds;
 
 import java.util.Collection;
 
+import com.google.android.maps.GeoPoint;
+
 import android.content.Context;
+import android.location.Location;
 
 public interface PlaygroundDAO {
 	
@@ -26,5 +29,12 @@ public interface PlaygroundDAO {
 	public boolean deletePlayground(Context context, int id);
 	
 	public Collection<Playground> getAll(Context context);
+
+	public Collection<Playground> getNearby(Context context,
+			GeoPoint myLocation, int maxQuantity);
+
+	public Collection<? extends Playground> getWithin(Context context,
+			GeoPoint topLeft, GeoPoint bottomRight, int maxQuantity);
+	
 
 }
