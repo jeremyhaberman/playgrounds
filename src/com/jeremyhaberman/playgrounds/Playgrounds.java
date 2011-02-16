@@ -44,8 +44,8 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 /**
- * Playgrounds is the entry and primary Activity. It displays the map, the user's
- * current location and all playgrounds
+ * Playgrounds is the entry and primary Activity. It displays the map, the
+ * user's current location and all playgrounds
  * 
  * @author jeremyhaberman
  * 
@@ -69,16 +69,20 @@ public class Playgrounds extends MapActivity {
 	protected static boolean initializing = true;
 	protected static boolean mNewPlaygrounds = true;
 	private GeoPoint myLocation = null;
+	private Thread getPlaygroundsFromWebThread = null;
 
+	/**
+	 * Instantiate the playgroundDAO for retrieving playground data and display
+	 * the map
+	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		context = this;
 		playgroundDAO = new WebPlaygroundDAO(this);
 		setContentView(R.layout.map);
-//		initMapView();
-//		showMyLocation();
-//		showPlaygrounds();
+		initMapView();
+		showLocationAndPlaygrounds();
 	}
 
 	/**
@@ -91,9 +95,10 @@ public class Playgrounds extends MapActivity {
 	}
 
 	/**
-	 * Show the current location on the map and zoom in to level 13
+	 * Show the current location on the map, zoom in to level 13 and
+	 * then display nearby playgrounds
 	 */
-	private void showMyLocation() {
+	private void showLocationAndPlaygrounds() {
 		if (overlay == null) {
 			overlay = new MyLocationOverlay(this, map);
 		}
@@ -107,7 +112,18 @@ public class Playgrounds extends MapActivity {
 				controller.setZoom(13);
 				myLocation = overlay.getMyLocation();
 				controller.animateTo(myLocation);
-				mHandler.post(fetchAndShowPlaygrounds);
+
+				mHandler.post(startLoadingPlaygroundsProgressDialog);
+
+				setPlaygrounds(loadNearbyPlaygroundData());
+
+				if (mPlaygrounds.size() == 0) {
+					mHandler.post(displayErrorTask);
+				} else {
+					mHandler.post(updatePlaygroundsOnMap);
+				}
+
+				// mHandler.post(fetchAndShowPlaygrounds);
 			}
 		});
 
@@ -115,30 +131,19 @@ public class Playgrounds extends MapActivity {
 	}
 
 	/**
-	 * Show the playgrounds on the map. Displays a spinning progress dialog
-	 * while the playground data is retrieved via background thread.
+	 * Adds the playgrounds to the map after the playground data has been
+	 * retrieved by the thread in showPlaygrounds()
 	 */
-	protected void showPlaygrounds() {
+	final Runnable startLoadingPlaygroundsProgressDialog = new Runnable() {
+		public void run() {
+			displayLoadingPlaygroundsProgressDialog();
+		}
+	};
 
+	private void displayLoadingPlaygroundsProgressDialog() {
 		progressDialog = ProgressDialog.show(Playgrounds.this, "",
 				LOADING_NEARBY_PLAYGROUNDS, true);
 		progressDialog.show();
-
-		Thread getPlaygroundsFromWebThread = new Thread() {
-			public void run() {
-				synchronized (initPlaygroundLock) {
-					setPlaygrounds(loadNearbyPlaygroundData());
-//					setPlaygrounds(loadVisiblePlaygroundData());
-					if (mPlaygrounds.size() == 0) {
-						mHandler.post(displayErrorTask);
-					} else {
-						mHandler.post(updatePlaygroundsOnMap);
-					}
-				}
-			}
-		};
-
-		getPlaygroundsFromWebThread.start();
 	}
 
 	/**
@@ -151,13 +156,39 @@ public class Playgrounds extends MapActivity {
 			addPlaygroundsLayerToMap();
 		}
 	};
-	
+
 	final Runnable fetchAndShowPlaygrounds = new Runnable() {
 		public void run() {
 			showPlaygrounds();
 		}
 	};
-	
+
+	/**
+	 * Show the playgrounds on the map. Displays a spinning progress dialog
+	 * while the playground data is retrieved via background thread.
+	 */
+	protected void showPlaygrounds() {
+
+		progressDialog = ProgressDialog.show(Playgrounds.this, "",
+				LOADING_NEARBY_PLAYGROUNDS, true);
+		progressDialog.show();
+
+		getPlaygroundsFromWebThread = new Thread() {
+			public void run() {
+				synchronized (initPlaygroundLock) {
+					setPlaygrounds(loadNearbyPlaygroundData());
+					// setPlaygrounds(loadVisiblePlaygroundData());
+					if (mPlaygrounds.size() == 0) {
+						mHandler.post(displayErrorTask);
+					} else {
+						mHandler.post(updatePlaygroundsOnMap);
+					}
+				}
+			}
+		};
+
+		getPlaygroundsFromWebThread.start();
+	}
 
 	/**
 	 * Displays an error if the playground data was not successfully loaded by
@@ -213,37 +244,31 @@ public class Playgrounds extends MapActivity {
 	 * @return
 	 */
 	protected List<Playground> loadNearbyPlaygroundData() {
-		
-//		LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
-//		Criteria criteria = new Criteria();
-//		criteria.setAccuracy(Criteria.ACCURACY_FINE);
-//		String provider = manager.getBestProvider(criteria, true);
-//		Location myLocation = manager.getLastKnownLocation(provider);
-		
-//		GeoPoint centerOfMap = map.getMapCenter();
-		
 		List<Playground> playgrounds = new ArrayList<Playground>(
-				playgroundDAO.getNearby(this, myLocation, MAX_QUANTITY ));
+				playgroundDAO.getNearby(this, myLocation, MAX_QUANTITY));
 		return playgrounds;
 	}
-	
+
 	protected List<Playground> loadVisiblePlaygroundData() {
-		
+
 		GeoPoint centerOfMap = map.getMapCenter();
-		
+
 		int latitudeSpan = map.getLatitudeSpan();
 		int longitudeSpan = map.getLongitudeSpan();
-		
-		GeoPoint topLeft = new GeoPoint(centerOfMap.getLatitudeE6() + (latitudeSpan / 2),
-										centerOfMap.getLongitudeE6() + (longitudeSpan / 2));
-		
-		GeoPoint bottomRight = new GeoPoint(centerOfMap.getLatitudeE6() - (latitudeSpan / 2),
-											centerOfMap.getLongitudeE6() - (longitudeSpan / 2));
-		
+
+		GeoPoint topLeft = new GeoPoint(centerOfMap.getLatitudeE6()
+				+ (latitudeSpan / 2), centerOfMap.getLongitudeE6()
+				+ (longitudeSpan / 2));
+
+		GeoPoint bottomRight = new GeoPoint(centerOfMap.getLatitudeE6()
+				- (latitudeSpan / 2), centerOfMap.getLongitudeE6()
+				- (longitudeSpan / 2));
+
 		List<Playground> playgrounds = new ArrayList<Playground>(
-				playgroundDAO.getWithin(this, topLeft, bottomRight, MAX_QUANTITY ));
+				playgroundDAO.getWithin(this, topLeft, bottomRight,
+						MAX_QUANTITY));
 		return playgrounds;
-		
+
 	}
 
 	/**
@@ -288,27 +313,19 @@ public class Playgrounds extends MapActivity {
 		}
 	};
 
-	private void removePlaygroundsOnMap() {
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
-		if (playgroundsLayer != null) {
-			mapOverlays.remove(playgroundsLayer);
-		}
-	}
-
 	@Override
 	protected void onResume() {
 		synchronized (initPlaygroundLock) {
 			super.onResume();
-			initMapView();
-			showMyLocation();
-//			showPlaygrounds();
+			// initMapView();
+			// showMyLocation();
+			// showPlaygrounds();
 
-			Bundle errorBundle = getIntent().getExtras();
+			// Bundle errorBundle = getIntent().getExtras();
 
-			if (errorBundle != null) {
-				String error = errorBundle.getString("Exception");
-			}
+			// if (errorBundle != null) {
+			// String error = errorBundle.getString("Exception");
+			// }
 			// refreshPlaygrounds();
 		}
 	}
@@ -318,6 +335,14 @@ public class Playgrounds extends MapActivity {
 		overlay.disableMyLocation();
 		removePlaygroundsOnMap();
 		super.onPause();
+	}
+
+	private void removePlaygroundsOnMap() {
+		mapOverlays = map.getOverlays();
+		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
+		if (playgroundsLayer != null) {
+			mapOverlays.remove(playgroundsLayer);
+		}
 	}
 
 	@Override
