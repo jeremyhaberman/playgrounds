@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="about_label">About</string>
+    <string name="about_title">About Playgrounds</string>
+	<string name="about_text">\
+Playgrounds helps you find playgrounds in your area.</string>
+</resources>

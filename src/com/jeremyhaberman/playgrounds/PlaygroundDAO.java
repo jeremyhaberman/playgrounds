@@ -35,6 +35,8 @@ public interface PlaygroundDAO {
 
 	public Collection<? extends Playground> getWithin(Context context,
 			GeoPoint topLeft, GeoPoint bottomRight, int maxQuantity);
+
+	Collection<Playground> getNearby(Context context, GeoPoint location);
 	
 
 }

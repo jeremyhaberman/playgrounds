@@ -15,9 +15,19 @@
  */
 package com.jeremyhaberman.playgrounds;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -32,16 +42,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
-import android.location.Criteria;
-import android.location.Location;
-import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.TextView;
+import android.view.View;
 
 /**
  * Playgrounds is the entry and primary Activity. It displays the map, the
@@ -52,37 +62,33 @@ import android.widget.TextView;
  */
 public class Playgrounds extends MapActivity {
 
-	static Context context;
-	static Object initPlaygroundLock = new Object();
-	private List<Overlay> mapOverlays;
-	private PlaygroundsLayer playgroundsLayer;
+	private static Context context;
 	private MapView map;
 	private MapController controller;
-	private PlaygroundDAO playgroundDAO;
 	private MyLocationOverlay overlay;
+	private GeoPoint myLocation = null;
+	private List<Overlay> mapOverlays;
+	private PlaygroundsLayer playgroundsLayer;
 	private ProgressDialog progressDialog;
+	private AlertDialog alertDialog;
+	private static final String LOADING_NEARBY_PLAYGROUNDS = "Loading nearby playgrounds";
 	protected static final int ERROR_LOADING_PLAYGROUNDS = 1;
 	protected static final CharSequence ERROR_LOADING_PLAYGROUNDS_STRING = "Error loading playgrounds.";
-	private static final String LOADING_NEARBY_PLAYGROUNDS = "Loading nearby playgrounds";
-	private static final int MAX_QUANTITY = 10;
-	protected static List<Playground> mPlaygrounds;
-	protected static boolean initializing = true;
-	protected static boolean mNewPlaygrounds = true;
-	private GeoPoint myLocation = null;
-	private Thread getPlaygroundsFromWebThread = null;
+	protected static final int ERROR_FINDING_LOCATION = 0;
+	DownloadPlaygroundsTask downloadPlaygroundsTask;
+	Timer timer;
+	TimerTask getMyLocationTask;
 
 	/**
 	 * Instantiate the playgroundDAO for retrieving playground data and display
-	 * the map
+	 * the map. The current location and playground data is loaded by
+	 * onResume().
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		context = this;
-		playgroundDAO = new WebPlaygroundDAO(this);
 		setContentView(R.layout.map);
 		initMapView();
-		showLocationAndPlaygrounds();
 	}
 
 	/**
@@ -95,10 +101,19 @@ public class Playgrounds extends MapActivity {
 	}
 
 	/**
-	 * Show the current location on the map, zoom in to level 13 and
-	 * then display nearby playgrounds
+	 * During onResume(), show the current location and nearby playgrounds
 	 */
-	private void showLocationAndPlaygrounds() {
+	@Override
+	protected void onResume() {
+		super.onResume();
+		showMyLocationAndPlaygrounds();
+	}
+
+	/**
+	 * Show the current location on the map, zoom in to level 13 and then
+	 * display nearby playgrounds
+	 */
+	private void showMyLocationAndPlaygrounds() {
 		if (overlay == null) {
 			overlay = new MyLocationOverlay(this, map);
 		}
@@ -109,92 +124,146 @@ public class Playgrounds extends MapActivity {
 		overlay.runOnFirstFix(new Runnable() {
 			@Override
 			public void run() {
-				controller.setZoom(13);
+				controller.setZoom(14);
 				myLocation = overlay.getMyLocation();
 				controller.animateTo(myLocation);
-
-				mHandler.post(startLoadingPlaygroundsProgressDialog);
-
-				setPlaygrounds(loadNearbyPlaygroundData());
-
-				if (mPlaygrounds.size() == 0) {
-					mHandler.post(displayErrorTask);
-				} else {
-					mHandler.post(updatePlaygroundsOnMap);
-				}
-
-				// mHandler.post(fetchAndShowPlaygrounds);
+				mHandler.post(showPlaygrounds);
 			}
 		});
 
 		map.getOverlays().add(overlay);
 	}
 
-	/**
-	 * Adds the playgrounds to the map after the playground data has been
-	 * retrieved by the thread in showPlaygrounds()
-	 */
-	final Runnable startLoadingPlaygroundsProgressDialog = new Runnable() {
+	final Runnable showPlaygrounds = new Runnable() {
 		public void run() {
-			displayLoadingPlaygroundsProgressDialog();
+			showNearbyPlaygrounds();
 		}
 	};
 
+	// Handler for callbacks to the GUI thread
+	final Handler mHandler = new Handler() {
+		public void handleMessage(Message message) {
+
+			AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext());
+
+			switch (message.what) {
+			case ERROR_FINDING_LOCATION:
+				progressDialog.dismiss();
+				builder.setMessage(getString(R.string.unable_to_get_current_location));
+				break;
+			case ERROR_LOADING_PLAYGROUNDS:
+				progressDialog.dismiss();
+				builder.setMessage(ERROR_LOADING_PLAYGROUNDS_STRING);
+				break;
+			}
+			progressDialog.dismiss();
+		}
+	};
+
+	/**
+	 * Get playground data via background task and add it to the map
+	 */
+	private void showNearbyPlaygrounds() {
+		downloadPlaygroundsTask = new DownloadPlaygroundsTask();
+		downloadPlaygroundsTask.execute(myLocation);
+	}
+
+	/**
+	 * Add playground items to the map. If <code>playgrounds</code> is
+	 * <code>null</code>, send a message to the UI handler to display the error
+	 * and allow the user to try again.
+	 * 
+	 * @param playgrounds
+	 */
+	public void addPlaygroundsToMap(Collection<Playground> playgrounds) {
+
+		if (playgrounds == null) {
+			mHandler.sendEmptyMessage(ERROR_LOADING_PLAYGROUNDS);
+			return;
+		}
+
+		mapOverlays = map.getOverlays();
+		Drawable drawable = this.getResources().getDrawable(R.drawable.pin2);
+		playgroundsLayer = new PlaygroundsLayer(this, drawable);
+
+		Collection<PlaygroundItem> playgroundItems = PlaygroundItemCreator.createItems(playgrounds);
+
+		for (PlaygroundItem item : playgroundItems) {
+			playgroundsLayer.addOverlayItem(item);
+		}
+
+		mapOverlays.add(playgroundsLayer);
+		map.postInvalidate();
+	}
+
+	@Override
+	protected void onPause() {
+		if (progressDialog != null && progressDialog.isShowing()) {
+			progressDialog.cancel();
+		}
+		if (alertDialog != null && alertDialog.isShowing()) {
+			alertDialog.cancel();
+		}
+		removePlaygroundsOnMap();
+		overlay.disableMyLocation();
+		overlay = null;
+		downloadPlaygroundsTask.cancel(true);
+		super.onPause();
+	}
+
+	/**
+	 * Clear the playgrounds from the map
+	 */
+	private void removePlaygroundsOnMap() {
+		mapOverlays = map.getOverlays();
+		if (playgroundsLayer != null) {
+			mapOverlays.remove(playgroundsLayer);
+		}
+	}
+
+	/**
+	 * Display a "Loading nearby playgrounds..." dialog while the background
+	 * task is retrieving playground data
+	 */
 	private void displayLoadingPlaygroundsProgressDialog() {
-		progressDialog = ProgressDialog.show(Playgrounds.this, "",
-				LOADING_NEARBY_PLAYGROUNDS, true);
+		progressDialog = ProgressDialog
+				.show(Playgrounds.this, "", LOADING_NEARBY_PLAYGROUNDS, true);
 		progressDialog.show();
 	}
 
 	/**
-	 * Adds the playgrounds to the map after the playground data has been
-	 * retrieved by the thread in showPlaygrounds()
+	 * Display an error about failing to load playground data. Called by
+	 * displayErrorTask
 	 */
-	final Runnable updatePlaygroundsOnMap = new Runnable() {
-		public void run() {
-			addPlaygroundsToLayer();
-			addPlaygroundsLayerToMap();
-		}
-	};
+	protected void displayLocationError() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		// builder.setTitle("ERROR");
 
-	final Runnable fetchAndShowPlaygrounds = new Runnable() {
-		public void run() {
-			showPlaygrounds();
-		}
-	};
-
-	/**
-	 * Show the playgrounds on the map. Displays a spinning progress dialog
-	 * while the playground data is retrieved via background thread.
-	 */
-	protected void showPlaygrounds() {
-
-		progressDialog = ProgressDialog.show(Playgrounds.this, "",
-				LOADING_NEARBY_PLAYGROUNDS, true);
-		progressDialog.show();
-
-		getPlaygroundsFromWebThread = new Thread() {
-			public void run() {
-				synchronized (initPlaygroundLock) {
-					setPlaygrounds(loadNearbyPlaygroundData());
-					// setPlaygrounds(loadVisiblePlaygroundData());
-					if (mPlaygrounds.size() == 0) {
-						mHandler.post(displayErrorTask);
-					} else {
-						mHandler.post(updatePlaygroundsOnMap);
-					}
-				}
+		builder.setMessage(getString(R.string.unable_to_get_current_location));
+		builder.setCancelable(false);
+		builder.setPositiveButton("Try Again", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				alertDialog.dismiss();
+				mHandler.post(showPlaygrounds);
 			}
-		};
-
-		getPlaygroundsFromWebThread.start();
+		});
+		builder.setNegativeButton("Close", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				alertDialog.dismiss();
+			}
+		});
+		alertDialog = builder.create();
+		alertDialog.show();
+		mHandler.sendEmptyMessage(0);
 	}
 
 	/**
 	 * Displays an error if the playground data was not successfully loaded by
 	 * the thread in showPlaygrounds().
 	 */
-	final Runnable displayErrorTask = new Runnable() {
+	final Runnable displayPlaygroundLoadErrorTask = new Runnable() {
 		public void run() {
 			displayPlaygroundLoadError();
 		}
@@ -206,143 +275,26 @@ public class Playgrounds extends MapActivity {
 	 */
 	protected void displayPlaygroundLoadError() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("ERROR");
+		// builder.setTitle("ERROR");
 
 		builder.setMessage("Error loading playgrounds");
 		builder.setCancelable(false);
-		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		builder.setPositiveButton("Try Again", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
+				alertDialog.dismiss();
+				mHandler.post(showPlaygrounds);
 			}
 		});
-		AlertDialog dialog = builder.create();
-		dialog.show();
-		mHandler.sendEmptyMessage(0);
-	}
-
-	/**
-	 * Setter for mPlaygrounds
-	 * 
-	 * @param playgrounds
-	 */
-	protected static void setPlaygrounds(List<Playground> playgrounds) {
-		mPlaygrounds = playgrounds;
-	}
-
-	/**
-	 * Refreshes the playgrounds on the map
-	 */
-	protected void refreshPlaygrounds() {
-		removePlaygroundsOnMap();
-		showPlaygrounds();
-	}
-
-	/**
-	 * Loads playground data from the web. This is a long-running task that
-	 * should only be called from a background thread.
-	 * 
-	 * @return
-	 */
-	protected List<Playground> loadNearbyPlaygroundData() {
-		List<Playground> playgrounds = new ArrayList<Playground>(
-				playgroundDAO.getNearby(this, myLocation, MAX_QUANTITY));
-		return playgrounds;
-	}
-
-	protected List<Playground> loadVisiblePlaygroundData() {
-
-		GeoPoint centerOfMap = map.getMapCenter();
-
-		int latitudeSpan = map.getLatitudeSpan();
-		int longitudeSpan = map.getLongitudeSpan();
-
-		GeoPoint topLeft = new GeoPoint(centerOfMap.getLatitudeE6()
-				+ (latitudeSpan / 2), centerOfMap.getLongitudeE6()
-				+ (longitudeSpan / 2));
-
-		GeoPoint bottomRight = new GeoPoint(centerOfMap.getLatitudeE6()
-				- (latitudeSpan / 2), centerOfMap.getLongitudeE6()
-				- (longitudeSpan / 2));
-
-		List<Playground> playgrounds = new ArrayList<Playground>(
-				playgroundDAO.getWithin(this, topLeft, bottomRight,
-						MAX_QUANTITY));
-		return playgrounds;
-
-	}
-
-	/**
-	 * Converts playgrounds to map overlay items and then adds the items to an
-	 * itemized map overlay
-	 * 
-	 * @return PlaygroundsLayer playgroundsLayer
-	 */
-	protected PlaygroundsLayer addPlaygroundsToLayer() {
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.pin);
-		playgroundsLayer = new PlaygroundsLayer(drawable);
-
-		Collection<PlaygroundItem> playgroundItems = PlaygroundItemCreator
-				.createItems(mPlaygrounds);
-
-		for (PlaygroundItem item : playgroundItems) {
-			playgroundsLayer.addOverlayItem(item);
-		}
-		return playgroundsLayer;
-	}
-
-	protected void addPlaygroundsLayerToMap() {
-		mapOverlays.add(playgroundsLayer);
-		initializing = false;
-		mNewPlaygrounds = false;
-		mHandler.sendEmptyMessage(0);
-	}
-
-	// Handler for callbacks to the GUI thread
-	final Handler mHandler = new Handler() {
-		public void handleMessage(Message message) {
-			switch (message.what) {
-			case ERROR_LOADING_PLAYGROUNDS:
-				progressDialog.dismiss();
-				AlertDialog.Builder builder = new AlertDialog.Builder(
-						getApplicationContext());
-				builder.setMessage(ERROR_LOADING_PLAYGROUNDS_STRING);
-
+		builder.setNegativeButton("Close", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				alertDialog.dismiss();
 			}
-			progressDialog.dismiss();
-		}
-	};
-
-	@Override
-	protected void onResume() {
-		synchronized (initPlaygroundLock) {
-			super.onResume();
-			// initMapView();
-			// showMyLocation();
-			// showPlaygrounds();
-
-			// Bundle errorBundle = getIntent().getExtras();
-
-			// if (errorBundle != null) {
-			// String error = errorBundle.getString("Exception");
-			// }
-			// refreshPlaygrounds();
-		}
-	}
-
-	@Override
-	protected void onPause() {
-		overlay.disableMyLocation();
-		removePlaygroundsOnMap();
-		super.onPause();
-	}
-
-	private void removePlaygroundsOnMap() {
-		mapOverlays = map.getOverlays();
-		Drawable drawable = this.getResources().getDrawable(R.drawable.icon);
-		if (playgroundsLayer != null) {
-			mapOverlays.remove(playgroundsLayer);
-		}
+		});
+		alertDialog = builder.create();
+		alertDialog.show();
+		mHandler.sendEmptyMessage(0);
 	}
 
 	@Override
@@ -360,8 +312,110 @@ public class Playgrounds extends MapActivity {
 		case R.id.add:
 			startActivity(new Intent(this, AddPlayground.class));
 			return true;
+		case R.id.about:
+			startActivity(new Intent(this, About.class));
 		}
 		return false;
+	}
+
+	protected MapView getMap() {
+		return map;
+	}
+
+	protected Overlay getPlaygroundOverlay() {
+		return playgroundsLayer;
+	}
+
+	private class DownloadPlaygroundsTask extends AsyncTask<GeoPoint, Void, Collection<Playground>> {
+
+		private static final String TAG = "DownloadPlaygroundsTask";
+		private static final String LATITUDE_PARAM = "latitude";
+		private static final String LONGITUDE_PARAM = "longitude";
+		private static final String MAX_PARAM = "max";
+		private static final String TYPE_PARAM = "type";
+		private static final String NEARBY = "nearby";
+		private static final int MAX_QUANTITY = 1000;
+
+		protected void onPreExecute() {
+			displayLoadingPlaygroundsProgressDialog();
+		}
+
+		@Override
+		protected Collection<Playground> doInBackground(GeoPoint... params) {
+			GeoPoint location = params[0];
+			Collection<Playground> playgrounds = new ArrayList<Playground>();
+			HttpURLConnection httpConnection = null;
+			Log.d(TAG, "getPlaygrounds()");
+
+			try {
+				// Build query
+				URL url = new URL("http://swingsetweb.appspot.com/playground?" + TYPE_PARAM + "="
+						+ NEARBY + "&" + LATITUDE_PARAM + "=" + location.getLatitudeE6() + "&"
+						+ LONGITUDE_PARAM + "=" + location.getLongitudeE6() + "&" + MAX_PARAM + "="
+						+ MAX_QUANTITY);
+				httpConnection = (HttpURLConnection) url.openConnection();
+				httpConnection.setConnectTimeout(10000);
+				httpConnection.setReadTimeout(10000);
+				StringBuilder response = new StringBuilder();
+
+				if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+					// Read results from the query
+					BufferedReader input = new BufferedReader(new InputStreamReader(
+							httpConnection.getInputStream(), "UTF-8"));
+					String strLine = null;
+					while ((strLine = input.readLine()) != null) {
+						response.append(strLine);
+					}
+					input.close();
+
+				}
+
+				// Parse to get translated text
+				JSONArray jsonPlaygrounds = new JSONArray(response.toString());
+				int numOfPlaygrounds = jsonPlaygrounds.length();
+
+				JSONObject jsonPlayground = null;
+
+				for (int i = 0; i < numOfPlaygrounds; i++) {
+					jsonPlayground = jsonPlaygrounds.getJSONObject(i);
+					playgrounds.add(toPlayground(jsonPlayground));
+				}
+
+			} catch (Exception e) {
+				Log.e(TAG, "Exception", e);
+			} finally {
+				if (httpConnection != null) {
+					httpConnection.disconnect();
+				}
+			}
+
+			return playgrounds;
+		}
+
+		@Override
+		protected void onCancelled() {
+			super.onCancelled();
+		}
+
+		@Override
+		protected void onPostExecute(Collection<Playground> playgrounds) {
+			if (playgrounds.size() == 0) {
+				mHandler.post(displayPlaygroundLoadErrorTask);
+			} else {
+				addPlaygroundsToMap(playgrounds);
+				mHandler.sendEmptyMessage(0);
+			}
+		}
+
+		private Playground toPlayground(JSONObject jsonPlayground) throws JSONException {
+			String name = jsonPlayground.getString("name");
+			String description = jsonPlayground.getString("description");
+			int latitude = jsonPlayground.getInt("latitude");
+			int longitude = jsonPlayground.getInt("longitude");
+
+			return new Playground(name, description, latitude, longitude);
+		}
+
 	}
 
 	@Override
@@ -369,7 +423,7 @@ public class Playgrounds extends MapActivity {
 		return false;
 	}
 
-	protected static void setNewPlaygrounds(boolean newPlaygrounds) {
-		mNewPlaygrounds = newPlaygrounds;
+	protected static Context getContext() {
+		return context;
 	}
 }

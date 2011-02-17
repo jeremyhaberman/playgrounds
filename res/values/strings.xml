@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">Playgrounds</string>
     <string name="playground_name">Playground Name</string>
-    <string name="add_shortcut">a</string>
     <string name="add_label">Add Playground</string>
     <string name="add_playground_title">Add Playground</string>
     <string name="add_current_location_title">Add Current Location</string>
@@ -12,5 +11,12 @@
     <string name="error">Error</string>
     <string name="interrupted_error">Connection interrupted</string>
     <string name="add_current_location_button_label">Add current location</string>
-    <string name="loading_nearby_playgrounds">"Loading nearby playgrounds..."</string>
+    <string name="loading_nearby_playgrounds">Loading nearby playgrounds...</string>
+    <string name="adding_playground">Adding playground...</string>
+    <string name="playground_added">Playground added.</string>
+    <string name="playground_add_failed">Failed to add playground.</string>
+    <string name="try_again">Try again</string>
+    <string name="back_to_map">Back to map</string>
+    <string name="finding_current_location">Finding current location...</string>
+    <string name="unable_to_get_current_location">Unable to get current location</string>
 </resources>

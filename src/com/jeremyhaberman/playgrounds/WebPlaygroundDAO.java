@@ -58,10 +58,11 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 	private static final String BOTTOM_RIGHT_LONGITUDE_PARAM = "botrightlong";
 	private static final String NEARBY = "nearby";
 	private static final String WITHIN = "within";
+	private static final int MAX_QUANTITY = 1000;
 	private Collection<Playground> playgrounds;
 	private Playgrounds swingset;
 	private Context context;
-
+	
 	WebPlaygroundDAO(Playgrounds swingset) {
 		this.swingset = swingset;
 	}
@@ -194,6 +195,11 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 
 		return new Playground(name, description, latitude, longitude);
 	}
+	
+	@Override
+	public Collection<Playground> getNearby(Context context, GeoPoint location) {
+		return getNearby(context, location, MAX_QUANTITY);
+	}
 
 	@Override
 	public Collection<Playground> getNearby(Context context, GeoPoint location, int maxQuantity) {
@@ -203,11 +209,6 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 		Log.d(TAG, "getPlaygrounds()");
 
 		try {
-			// Check if task has been interrupted
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
-			}
-
 			// Build query
 			URL url = new URL("http://swingsetweb.appspot.com/playground?" +
 							  TYPE_PARAM + "=" + NEARBY + "&" +

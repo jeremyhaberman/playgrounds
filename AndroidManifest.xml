@@ -2,19 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.jeremyhaberman.playgrounds"
       android:versionCode="1"
-      android:versionName="0.8">
+      android:versionName="0.8.2">
     <uses-sdk android:minSdkVersion="8" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.INTERNET" />
 
-    <application android:icon="@drawable/swingset"
+    <application android:icon="@drawable/launcher"
     	android:label="@string/app_name"
     			 >
         <activity android:name="Playgrounds"
                   android:label="@string/app_name"
-                  android:launchMode="singleInstance"
-                  android:theme="@android:style/Theme.Light" >
+                  android:launchMode="singleInstance" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -22,10 +21,14 @@
         </activity>
         <activity android:name="AddPlayground"
         		  android:label="@string/add_playground_title"
-        		  android:theme="@android:style/Theme.Light"/>
+        		  android:screenOrientation="portrait" />
         <activity android:name="com.jeremyhaberman.playgrounds.AddCurrentLocation"
         		  android:label="@string/add_current_location_title"
-        		  android:theme="@android:style/Theme.Light" />
+        		  android:screenOrientation="portrait" />
+        <activity android:name="com.jeremyhaberman.playgrounds.About"
+        		  android:label="@string/about_title"
+        		  android:theme="@android:style/Theme.Dialog"
+        		  android:screenOrientation="portrait" />
 		<uses-library android:name="com.google.android.maps" />
     </application>
 </manifest>

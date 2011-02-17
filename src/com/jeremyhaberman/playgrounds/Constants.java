@@ -26,4 +26,7 @@ public class Constants implements BaseColumns{
 	public static final String DESCRIPTION = "description";
 	public static final String LATITUDE = "latitude";
 	public static final String LONGITUDE = "longitude";
+	
+	public static final int SUCCESS = 0;
+	public static final int FAILURE = 1;
 }
