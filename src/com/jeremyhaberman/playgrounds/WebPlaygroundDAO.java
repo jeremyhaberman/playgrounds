@@ -256,12 +256,8 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 			}
 		}
 
-		// all done
 		Log.d(TAG, "   -> returned " + result);
 		return playgrounds;
-		// }
-		
-		
 		
 	}
 
@@ -327,11 +323,7 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 			}
 		}
 
-		// all done
 		Log.d(TAG, "   -> returned " + result);
 		return playgrounds;
-		// }
-		
-		
 	}
 }

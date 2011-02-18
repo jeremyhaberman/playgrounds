@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<array name="range_array_names">
+		<item>@string/one_mile</item>
+		<item>@string/two_miles</item>
+		<item>@string/five_miles</item>
+		<item>@string/ten_miles</item>
+	</array>
+	<array name="range_array_values">
+		<item>@string/one</item>
+		<item>@string/two</item>
+		<item>@string/five</item>
+		<item>@string/ten</item>
+	</array>
+</resources>

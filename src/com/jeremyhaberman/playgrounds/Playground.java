@@ -15,6 +15,12 @@
  */
 package com.jeremyhaberman.playgrounds;
 
+/**
+ * A Playground
+ * 
+ * @author jeremy
+ *
+ */
 public class Playground {
 
 	Playground(String name, String description, int latitude, int longitude) {

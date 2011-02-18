@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+    <TableLayout
+    	android:layout_width="fill_parent"
+    	android:layout_height="fill_parent"
+    	android:stretchColumns="1"
+    	android:padding="10dip" >
+   		<TextView
+   			android:id="@+id/name_label"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:text="@string/name_label" />
+   		<EditText
+   			android:id="@+id/name"
+   			android:layout_height="wrap_content"
+   			android:layout_width="wrap_content" />	    		
+   		<TextView
+   			android:id="@+id/description_label"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:text="@string/description_label" />
+   		<EditText
+   			android:id="@+id/description"
+   			android:layout_height="wrap_content"
+   			android:layout_width="wrap_content"/>
+   		<TextView
+   			android:id="@+id/address_label"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:text="@string/address_label" />
+   		<EditText
+   			android:id="@+id/address"
+   			android:layout_height="wrap_content"
+   			android:layout_width="wrap_content" />	    		
+    	<Button
+			android:id="@+id/add_button"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:text="@string/addbutton_label" />
+    </TableLayout>
+</LinearLayout>

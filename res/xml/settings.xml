@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android">
+	<ListPreference
+		android:key="range"
+		android:title="@string/range_title"
+		android:summary="@string/range_summary"
+	    android:defaultValue="2"
+	    android:entries="@array/range_array_names"
+	    android:entryValues="@array/range_array_values" />
+</PreferenceScreen>

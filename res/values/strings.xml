@@ -5,12 +5,15 @@
     <string name="add_label">Add Playground</string>
     <string name="add_playground_title">Add Playground</string>
     <string name="add_current_location_title">Add Current Location</string>
+    <string name="add_by_address_title">Add By Address</string>
     <string name="addbutton_label">Add</string>
     <string name="name_label">Name</string>
     <string name="description_label">Description</string>
+    <string name="address_label">Address</string>
     <string name="error">Error</string>
     <string name="interrupted_error">Connection interrupted</string>
     <string name="add_current_location_button_label">Add current location</string>
+    <string name="add_by_address_button_label">Add by address</string>
     <string name="loading_nearby_playgrounds">Loading nearby playgrounds...</string>
     <string name="adding_playground">Adding playground...</string>
     <string name="playground_added">Playground added.</string>
@@ -19,4 +22,15 @@
     <string name="back_to_map">Back to map</string>
     <string name="finding_current_location">Finding current location...</string>
     <string name="unable_to_get_current_location">Unable to get current location</string>
+    <string name="range_title">Range</string>
+    <string name="range_summary">Range of miles to find playgrounds within</string>
+    <string name="settings_title">Settings</string>
+    <string name="one_mile">1 mile</string>
+    <string name="two_miles">2 miles</string>
+    <string name="five_miles">5 miles</string>
+    <string name="ten_miles">10 miles</string>
+    <string name="one">1</string>
+    <string name="two">2</string>
+    <string name="five">5</string>
+    <string name="ten">10</string>
 </resources>

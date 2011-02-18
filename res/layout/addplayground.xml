@@ -3,10 +3,22 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
-   	<Button
-		android:id="@+id/add_current_location_button"
+    <LinearLayout
+    	android:id="@+id/add_playground_buttons"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_centerInParent="true"
-		android:text="@string/add_current_location_button_label" />
+		android:layout_centerInParent="true" >
+	   	<Button
+			android:id="@+id/add_current_location_button"
+			android:icon="@android:drawable/ic_menu_add"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/add_current_location_button_label" />
+		<Button
+			android:id="@+id/add_by_address_button"
+			android:icon="@android:drawable/ic_menu_add"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/add_by_address_button_label" />
+	</LinearLayout>
 </RelativeLayout>

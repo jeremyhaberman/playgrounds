@@ -7,21 +7,21 @@
     android:layout_height="fill_parent" >
     
     <!-- Production API key -->
-    <!--
     <com.google.android.maps.MapView
     	android:id="@+id/map"
     	android:apiKey="0jS9WWvZ28-AfEdpSNsRzapSGLx09vQrEy9RvhA"
     	android:layout_width="fill_parent"
     	android:layout_height="fill_parent"
     	android:clickable="true" />
-    -->
     
     <!-- Debug API key -->
+    <!--
     <com.google.android.maps.MapView
     	android:id="@+id/map"
     	android:apiKey="0jS9WWvZ28-BAMCiiZ72OyzCTl6Lo2pzWJ03MXQ"
     	android:layout_width="fill_parent"
     	android:layout_height="fill_parent"
     	android:clickable="true" />
+    -->
     		
 </LinearLayout>

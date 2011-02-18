@@ -21,25 +21,42 @@ import java.util.Iterator;
 
 import com.google.android.maps.GeoPoint;
 
+/**
+ * Utility class for converting <code>Playground</code>s to
+ * <code>PlaygroundItem</code>s
+ * 
+ * @author jeremyhaberman
+ * 
+ */
 public class PlaygroundItemCreator {
 
-	public static PlaygroundItem createItem(Playground playground)
-	{
+	/**
+	 * Converts a <code>Playground</code> to a <code>PlaygroundItem</code>
+	 * 
+	 * @param playground
+	 * @return
+	 */
+	public static PlaygroundItem createItem(Playground playground) {
 		GeoPoint point = new GeoPoint(playground.getLatitude(), playground.getLongitude());
 		return new PlaygroundItem(point, playground.getName(), playground.getDescription());
 	}
-	
-	public static Collection<PlaygroundItem> createItems(Collection<Playground> playgrounds)
-	{
+
+	/**
+	 * Converts a <code>Collection</code> of <code>Playground</code>s to a
+	 * <code>Collection</code> of <code>PlaygroundItem</code>s
+	 * 
+	 * @param playground
+	 * @return
+	 */
+	public static Collection<PlaygroundItem> createItems(Collection<Playground> playgrounds) {
 		Collection<PlaygroundItem> playgroundItems = new ArrayList<PlaygroundItem>();
-		
+
 		Iterator<Playground> playgroundIter = playgrounds.iterator();
-		while(playgroundIter.hasNext())
-		{
+		while (playgroundIter.hasNext()) {
 			playgroundItems.add(createItem(playgroundIter.next()));
-			
+
 		}
-		
+
 		return playgroundItems;
 	}
 }

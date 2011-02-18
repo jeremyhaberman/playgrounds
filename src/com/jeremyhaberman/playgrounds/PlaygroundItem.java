@@ -18,10 +18,16 @@ package com.jeremyhaberman.playgrounds;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.OverlayItem;
 
+/**
+ * PlaygrondItem represents a point on a map overlay
+ * 
+ * @author jeremyhaberman
+ *
+ */
 public class PlaygroundItem extends OverlayItem {
 
-	public PlaygroundItem(GeoPoint point, String title, String snippet) {
-		super(point, title, snippet);
+	public PlaygroundItem(GeoPoint point, String name, String description) {
+		super(point, name, description);
 	}
 
 }

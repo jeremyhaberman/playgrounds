@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,22 +37,23 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.Overlay;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.ListPreference;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 
 /**
  * Playgrounds is the entry and primary Activity. It displays the map, the
@@ -66,7 +68,7 @@ public class Playgrounds extends MapActivity {
 	private MapView map;
 	private MapController controller;
 	private MyLocationOverlay overlay;
-	private GeoPoint myLocation = null;
+	protected GeoPoint myLocation = null;
 	private List<Overlay> mapOverlays;
 	private PlaygroundsLayer playgroundsLayer;
 	private ProgressDialog progressDialog;
@@ -108,6 +110,8 @@ public class Playgrounds extends MapActivity {
 		super.onResume();
 		showMyLocationAndPlaygrounds();
 	}
+	
+	
 
 	/**
 	 * Show the current location on the map, zoom in to level 13 and then
@@ -124,7 +128,7 @@ public class Playgrounds extends MapActivity {
 		overlay.runOnFirstFix(new Runnable() {
 			@Override
 			public void run() {
-				controller.setZoom(14);
+				controller.setZoom(getZoom());
 				myLocation = overlay.getMyLocation();
 				controller.animateTo(myLocation);
 				mHandler.post(showPlaygrounds);
@@ -133,6 +137,30 @@ public class Playgrounds extends MapActivity {
 
 		map.getOverlays().add(overlay);
 	}
+	
+	/**
+	 * Gets the zoom level for the map based on the range preference
+	 * 
+	 * @return
+	 */
+	protected int getZoom() {
+		int range = getRange();
+		switch (range) {
+		case 1:	return 15;
+		case 2: return 14;
+		case 5: return 13;
+		case 10: return 12;
+		default: return 13;
+		}
+	}
+
+	/**
+	 * Gets the range preference
+	 * @return
+	 */
+	private int getRange() {
+		return Integer.parseInt(Settings.getRange(getApplicationContext()));
+	}
 
 	final Runnable showPlaygrounds = new Runnable() {
 		public void run() {
@@ -140,7 +168,9 @@ public class Playgrounds extends MapActivity {
 		}
 	};
 
-	// Handler for callbacks to the GUI thread
+	/**
+	 * Handler for callbacks to the UI thread
+	 */
 	final Handler mHandler = new Handler() {
 		public void handleMessage(Message message) {
 
@@ -159,6 +189,7 @@ public class Playgrounds extends MapActivity {
 			progressDialog.dismiss();
 		}
 	};
+	private int range;
 
 	/**
 	 * Get playground data via background task and add it to the map
@@ -309,8 +340,14 @@ public class Playgrounds extends MapActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		super.onOptionsItemSelected(item);
 		switch (item.getItemId()) {
-		case R.id.add:
-			startActivity(new Intent(this, AddPlayground.class));
+		case R.id.add_current_location_button:
+			startActivity(new Intent(this, AddCurrentLocation.class));
+			return true;
+		case R.id.add_by_address_button:
+			startActivity(new Intent(this, AddByAddress.class));
+			return true;
+		case R.id.settings:
+			startActivity(new Intent(this, Settings.class));
 			return true;
 		case R.id.about:
 			startActivity(new Intent(this, About.class));
@@ -334,7 +371,10 @@ public class Playgrounds extends MapActivity {
 		private static final String MAX_PARAM = "max";
 		private static final String TYPE_PARAM = "type";
 		private static final String NEARBY = "nearby";
-		private static final int MAX_QUANTITY = 1000;
+		private static final int MAX_QUANTITY = 5;
+		private static final String WITHIN = "within";
+		private static final String RANGE = "range";
+		private static final String RANGE_PARAM = "range";
 
 		protected void onPreExecute() {
 			displayLoadingPlaygroundsProgressDialog();
@@ -350,9 +390,9 @@ public class Playgrounds extends MapActivity {
 			try {
 				// Build query
 				URL url = new URL("http://swingsetweb.appspot.com/playground?" + TYPE_PARAM + "="
-						+ NEARBY + "&" + LATITUDE_PARAM + "=" + location.getLatitudeE6() + "&"
-						+ LONGITUDE_PARAM + "=" + location.getLongitudeE6() + "&" + MAX_PARAM + "="
-						+ MAX_QUANTITY);
+						+ RANGE + "&" + LATITUDE_PARAM + "=" + location.getLatitudeE6() / 1E6 + "&"
+						+ LONGITUDE_PARAM + "=" + location.getLongitudeE6() / 1E6 + "&" + RANGE_PARAM + "="
+						+ getRange());
 				httpConnection = (HttpURLConnection) url.openConnection();
 				httpConnection.setConnectTimeout(10000);
 				httpConnection.setReadTimeout(10000);
@@ -391,6 +431,8 @@ public class Playgrounds extends MapActivity {
 
 			return playgrounds;
 		}
+
+		
 
 		@Override
 		protected void onCancelled() {

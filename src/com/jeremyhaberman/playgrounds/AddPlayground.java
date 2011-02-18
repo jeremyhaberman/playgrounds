@@ -16,49 +16,154 @@
 package com.jeremyhaberman.playgrounds;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.view.View.OnClickListener;
 
-public class AddPlayground extends Activity implements OnClickListener {
-	private static final String TAG = "AddPlayground";
-	private static final int PLAYGROUND_ADDED = 0;
-	private View addCurrentLocationButton;
-	private View addByAddressButton;
-	
-	@Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.addplayground);
-        
-        addCurrentLocationButton = findViewById(R.id.add_current_location_button);
-        addCurrentLocationButton.setOnClickListener(this);
-        
-//        addByAddressButton = findViewById(R.id.add_by_address_button);
-//        addByAddressButton.setOnClickListener(this);
-    }
-	
-	
+/**
+ * AddPlayground is an abstract class that contains methods common to the
+ * AddByAddress and AddCurrentLocation Activities
+ * 
+ * @author jeremyhaberman
+ * 
+ */
+public abstract class AddPlayground extends Activity implements OnClickListener, Runnable {
 
+	private ProgressDialog progressDialog;
+
+	/**
+	 * Displays the progress dialog and starts the background thread to add the
+	 * playground
+	 */
 	@Override
 	public void onClick(View v) {
-		switch (v.getId()) {
-		case R.id.add_current_location_button:
-			Intent intent = new Intent(this, AddCurrentLocation.class);
-			startActivityForResult(intent, PLAYGROUND_ADDED);
-			break;
-//		case R.id.add_by_address_button:
-//			Intent i = new Intent(this, AddByAddress.class);
-//			startActivity(i);
-//			break;
-		}
+		progressDialog = ProgressDialog.show(this, "",
+				getString(R.string.adding_playground), true);
+		progressDialog.show();
+		Thread thread = new Thread(this);
+		thread.start();
 	}
-	
-	protected void onActivityResult(int requestCode, int resultCode,
-            Intent data) {
-        if (requestCode == PLAYGROUND_ADDED) {
-            startActivity(new Intent(this, Playgrounds.class));
-        }
-    }
+
+	/**
+	 * Handler to show a dialog with the result of the request to add the
+	 * playground from the background thread
+	 */
+	protected Handler handler = new Handler() {
+		public void handleMessage(Message message) {
+			progressDialog.dismiss();
+
+			int result;
+			if (message.what == 0) {
+				result = Constants.SUCCESS;
+			} else {
+				result = Constants.FAILURE;
+			}
+			showResult(result);
+		}
+	};
+
+	/**
+	 * If the result of adding the playground was successful, go back to the
+	 * map. This is called from a background task.
+	 */
+	final Runnable goHome = new Runnable() {
+		public void run() {
+			goBackToMap();
+		}
+	};
+
+	/**
+	 * Go back to the map
+	 */
+	protected void goBackToMap() {
+		Intent goHomeIntent = new Intent(this, Playgrounds.class);
+		goHomeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		startActivity(goHomeIntent);
+	}
+
+	/**
+	 * Shows a dialog with the result of the add playground request
+	 * 
+	 * @param result
+	 */
+	protected void showResult(int result) {
+		AlertDialog dialog = getAlertDialog(result);
+		dialog.show();
+	}
+
+	/**
+	 * Creates an AlertDialog specific to the result
+	 * 
+	 * @param result
+	 * @return
+	 */
+	private AlertDialog getAlertDialog(int result) {
+
+		AlertDialog dialog = null;
+
+		switch (result) {
+		case Constants.SUCCESS:
+			dialog = getSuccessDialog();
+			break;
+		case Constants.FAILURE:
+			dialog = getFailureDialog();
+			break;
+		default:
+			break;
+		}
+
+		return dialog;
+	}
+
+	/**
+	 * Dialog after a failed request to add a playground
+	 * 
+	 * @return
+	 */
+	protected AlertDialog getFailureDialog() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+		builder.setMessage(getString(R.string.playground_add_failed));
+		builder.setCancelable(false);
+		builder.setPositiveButton(getString(R.string.try_again),
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// leave the user with the same Activity
+					}
+				});
+		builder.setNegativeButton(R.string.back_to_map, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				finish();
+			}
+		});
+
+		return builder.create();
+	}
+
+	/**
+	 * Dialog after a successful request to add a playground
+	 * 
+	 * @return
+	 */
+	protected AlertDialog getSuccessDialog() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+		builder.setMessage(getString(R.string.playground_added));
+		builder.setCancelable(false);
+		builder.setNegativeButton("OK", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				finish();
+			}
+		});
+
+		return builder.create();
+	}
 }

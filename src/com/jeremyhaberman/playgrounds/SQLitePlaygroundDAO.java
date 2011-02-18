@@ -144,8 +144,7 @@ public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 	private static final int LONGITUDE_INDEX = 4;
 
 	@Override
-	public Collection<Playground> getNearby(Context context,
-			GeoPoint location, int maxQuantity) {
+	public Collection<Playground> getNearby(Context context, GeoPoint location, int maxQuantity) {
 		throw new RuntimeException("Not implemented");
 	}
 
@@ -157,7 +156,6 @@ public class SQLitePlaygroundDAO extends SQLiteOpenHelper implements
 
 	@Override
 	public Collection<Playground> getNearby(Context context, GeoPoint location) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new RuntimeException("Not implemented");
 	}
 }

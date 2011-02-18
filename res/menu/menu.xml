@@ -2,7 +2,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 	<item android:id="@+id/add"
 		  android:icon="@android:drawable/ic_menu_add"
-		  android:title="@string/add_label"/>
+		  android:title="@string/add_label" >
+		<menu>
+			<item
+				android:id="@+id/add_current_location_button"
+				android:icon="@android:drawable/ic_menu_add"
+				android:title="@string/add_current_location_button_label" />
+			<item
+				android:id="@+id/add_by_address_button"
+				android:icon="@android:drawable/ic_menu_add"
+				android:title="@string/add_by_address_button_label" />
+		</menu>
+	</item>
+	<item android:id="@+id/settings"
+		android:icon="@android:drawable/ic_menu_preferences"
+		android:title="@string/settings_title" />
 	<item android:id="@+id/about"
 		  android:icon="@android:drawable/ic_menu_info_details"
 		  android:title="@string/about_label" />

@@ -31,6 +31,12 @@ import android.net.Uri;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.ItemizedOverlay;
 
+/**
+ * Layer over a map to show playgrounds
+ * 
+ * @author jeremyhaberman
+ *
+ */
 public class PlaygroundsLayer extends ItemizedOverlay<PlaygroundItem> {
 
 	private ArrayList<PlaygroundItem> playgrounds = new ArrayList<PlaygroundItem>();
@@ -69,19 +75,13 @@ public class PlaygroundsLayer extends ItemizedOverlay<PlaygroundItem> {
 		dialog.setPositiveButton("Directions", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-
-//				LocationManager manager = (LocationManager) mContext.getApplicationContext()
-//						.getSystemService(Activity.LOCATION_SERVICE);
-//				Provider provider = new Prov
-//				Location lastKnownLocation = manager.getLastKnownLocation(LO);
-				
 				LocationManager manager = (LocationManager) mContext.getApplicationContext().getSystemService(Activity.LOCATION_SERVICE);
 				Criteria criteria = new Criteria();
 				criteria.setAccuracy(Criteria.ACCURACY_FINE);
 				String provider = manager.getBestProvider(criteria, true);
 				Location lastKnownLocation = manager.getLastKnownLocation(provider);
 
-				GeoPoint currentLocation = toGeoPoint(lastKnownLocation);
+				GeoPoint currentLocation = GeoUtil.toGeoPoint(lastKnownLocation);
 				GeoPoint destination = playgrounds.get(getPlaygroundIndex()).getPoint();
 
 				String mapDirectionsUri = getMapDirectionsUri(currentLocation, destination);
@@ -107,12 +107,6 @@ public class PlaygroundsLayer extends ItemizedOverlay<PlaygroundItem> {
 	
 	private int getPlaygroundIndex() {
 		return mPlaygroundIndex;
-	}
-
-	public static GeoPoint toGeoPoint(Location location) {
-		int latitude = (int) (location.getLatitude() * 1E6);
-		int longitude = (int) (location.getLongitude() * 1E6);
-		return new GeoPoint(latitude, longitude);
 	}
 
 	protected String getMapDirectionsUri(GeoPoint start, GeoPoint end) {
