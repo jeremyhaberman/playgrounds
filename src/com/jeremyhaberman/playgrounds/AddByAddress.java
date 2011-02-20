@@ -57,7 +57,7 @@ public class AddByAddress extends AddPlayground implements OnClickListener, Runn
 		int latitude = (int) (addr.getLatitude() * 1E6);
 		int longitude = (int) (addr.getLongitude() * 1E6);
 
-		PlaygroundDAO playgroundDAO = new WebPlaygroundDAO(getParent());
+		PlaygroundDAO playgroundDAO = new WebPlaygroundDAO(getApplicationContext());
 		int result = playgroundDAO.createPlayground(name, description, latitude, longitude);
 		handler.sendEmptyMessage(result);
 	}

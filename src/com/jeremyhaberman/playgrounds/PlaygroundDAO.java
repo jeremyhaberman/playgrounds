@@ -62,35 +62,11 @@ public interface PlaygroundDAO {
 	public Collection<Playground> getAll(Context context);
 
 	/**
-	 * Get playgrounds near a location
+	 * Get playgrounds within a range of miles
 	 * 
-	 * @param context
 	 * @param myLocation
-	 * @param maxQuantity
+	 * @param range range in miles
 	 * @return
 	 */
-	public Collection<Playground> getNearby(Context context, GeoPoint myLocation, int maxQuantity);
-
-	/**
-	 * Gets playgrounds near a location. Uses a default maximum for the number
-	 * of playgrounds to return.
-	 * 
-	 * @param context
-	 * @param location
-	 * @return
-	 */
-	Collection<Playground> getNearby(Context context, GeoPoint location);
-
-	/**
-	 * Get playgrounds within a box defined by upper left and lower right points
-	 * 
-	 * @param context
-	 * @param topLeft
-	 * @param bottomRight
-	 * @param maxQuantity
-	 * @return
-	 */
-	public Collection<? extends Playground> getWithin(Context context, GeoPoint topLeft,
-			GeoPoint bottomRight, int maxQuantity);
-
+	public Collection<Playground> getNearby(GeoPoint myLocation, int range);
 }

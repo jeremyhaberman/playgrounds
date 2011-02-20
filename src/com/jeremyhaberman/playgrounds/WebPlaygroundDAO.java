@@ -19,18 +19,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIUtils;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
@@ -39,59 +43,45 @@ import org.json.JSONObject;
 
 import com.google.android.maps.GeoPoint;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.location.Location;
 import android.util.Log;
 
-public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
+public class WebPlaygroundDAO implements PlaygroundDAO {
 
 	private static final String TAG = "WebPlaygroundDAO";
-	private static final String LATITUDE_PARAM = "latitude";
-	private static final String LONGITUDE_PARAM = "longitude";
-	private static final String MAX_PARAM = "max";
-	private static final String TYPE_PARAM = "type";
-	private static final String TOP_LEFT_LATITUDE_PARAM = "topleftlat";
-	private static final String TOP_LEFT_LONGITUDE_PARAM = "topleftlong";
-	private static final String BOTTOM_RIGHT_LATITUDE_PARAM = "botrightlat";
-	private static final String BOTTOM_RIGHT_LONGITUDE_PARAM = "botrightlong";
-	private static final String NEARBY = "nearby";
-	private static final String WITHIN = "within";
-	private static final int MAX_QUANTITY = 1000;
+
 	private Collection<Playground> playgrounds;
-	private Playgrounds swingset;
 	private Context context;
-	
-	WebPlaygroundDAO(Playgrounds swingset) {
-		this.swingset = swingset;
-	}
+	private int port;
+	private String servletPath;
+	private String host;
+	private String protocol;
 
 	WebPlaygroundDAO(Context context) {
 		this.context = context;
+		this.protocol = context.getString(R.string.protocol);
+		this.host = context.getString(R.string.host);
+		this.port = context.getResources().getInteger(R.integer.port);
+		this.servletPath = context.getString(R.string.playground_servlet_path);
 	}
 
 	@Override
-	public int createPlayground(String name, String description, int latitude,
-			int longitude) {
+	public int createPlayground(String name, String description, int latitude, int longitude) {
 
 		int result = 0;
-
-		// Create a new HttpClient and Post Header
+		
 		HttpClient httpclient = new DefaultHttpClient();
-		HttpPost httppost = new HttpPost(
-				"http://swingsetweb.appspot.com/playground");
 
 		try {
-			// Add your data
-			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+			URI uri = URIUtils.createURI(protocol, host, port, servletPath, null, null);
+			HttpPost httppost = new HttpPost(uri);
+			
+			// Add data
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 			nameValuePairs.add(new BasicNameValuePair("name", name));
-			nameValuePairs.add(new BasicNameValuePair("description",
-					description));
-			nameValuePairs.add(new BasicNameValuePair("latitude", Integer
-					.toString(latitude)));
-			nameValuePairs.add(new BasicNameValuePair("longitude", Integer
-					.toString(longitude)));
+			nameValuePairs.add(new BasicNameValuePair("description", description));
+			nameValuePairs.add(new BasicNameValuePair("latitude", Integer.toString(latitude)));
+			nameValuePairs.add(new BasicNameValuePair("longitude", Integer.toString(longitude)));
 			httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
 			// Execute HTTP Post Request
@@ -104,90 +94,81 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 				result = statusCode;
 			}
 
-		} catch (ClientProtocolException e) {
-			result = -1;
-		} catch (IOException e) {
+		} catch (Exception e) {
 			result = -1;
 		}
 
 		return result;
 	}
 
-	@Override
-	public boolean deletePlayground(Context context, int id) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
+	/**
+	 * NOT IMPLEMENTED
+	 * 
+	 * Get all playgrounds from the web
+	 */
 	@Override
 	public Collection<Playground> getAll(Context context) {
-		// synchronized (Swingset.initPlaygroundLock) {
+		return null;
+	}
+
+	/**
+	 * Get playgrounds within a given range
+	 * 
+	 * @param location current location
+	 * @param range range in miles
+	 */
+	@Override
+	public Collection<Playground> getNearby(GeoPoint location, int range) {
 		playgrounds = new ArrayList<Playground>();
-		String result = swingset.getResources().getString(R.string.error);
-		HttpURLConnection httpConnection = null;
-		Log.d(TAG, "getPlaygrounds()");
 
-		try {
-			// Check if task has been interrupted
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
-			}
+		URI nearbyUrl = getNearbyURL(location.getLatitudeE6() / 1E6, location.getLongitudeE6() / 1E6, range);
+		String response = getResponse(nearbyUrl);
+		convertJsonToPlaygrounds(response, playgrounds);
 
-			// Build query
-			URL url = new URL("http://swingsetweb.appspot.com/playground");
-			httpConnection = (HttpURLConnection) url.openConnection();
-			httpConnection.setConnectTimeout(15000);
-			httpConnection.setReadTimeout(15000);
-			StringBuilder response = new StringBuilder();
-
-			if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				// Read results from the query
-				BufferedReader input = new BufferedReader(
-						new InputStreamReader(httpConnection.getInputStream(),
-								"UTF-8"));
-				String strLine = null;
-				while ((strLine = input.readLine()) != null) {
-					response.append(strLine);
-				}
-				input.close();
-
-			}
-
-			// Parse to get translated text
-			JSONArray jsonPlaygrounds = new JSONArray(response.toString());
-			int numOfPlaygrounds = jsonPlaygrounds.length();
-
-			JSONObject jsonPlayground = null;
-
-			for (int i = 0; i < numOfPlaygrounds; i++) {
-				jsonPlayground = jsonPlaygrounds.getJSONObject(i);
-				playgrounds.add(toPlayground(jsonPlayground));
-			}
-
-		} catch (Exception e) {
-			Log.e(TAG, "Exception", e);
-			Intent errorIntent = new Intent(context, Playgrounds.class);
-			errorIntent.putExtra("Exception", e.getLocalizedMessage());
-			errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			context.startActivity(errorIntent);
-		} finally {
-			if (httpConnection != null) {
-				httpConnection.disconnect();
-			}
-		}
-
-		// all done
-		Log.d(TAG, "   -> returned " + result);
 		return playgrounds;
-		// }
+	}
+
+	/**
+	 * Execute a URI and return the response body as a string
+	 * 
+	 * @param uri
+	 * @return body of response
+	 */
+	private String getResponse(URI uri) {
+		StringBuffer responseBuffer = new StringBuffer();
+		
+		try {
+			HttpClient httpClient = new DefaultHttpClient();
+
+			HttpGet httpget = new HttpGet(uri);
+			HttpResponse response = httpClient.execute(httpget);
+			HttpEntity entity = response.getEntity();
+
+			responseBuffer = new StringBuffer();
+			BufferedReader input = new BufferedReader(new InputStreamReader(entity.getContent()));
+			String strLine = null;
+			while ((strLine = input.readLine()) != null) {
+				responseBuffer.append(strLine);
+			}
+		} catch (Exception e) {
+			Log.e(TAG, context.getString(R.string.http_error), e);
+		}
+		
+		return responseBuffer.toString();
 	}
 
 	protected void setPlaygrounds(Collection<Playground> playgrounds) {
 		this.playgrounds = playgrounds;
 	}
 
-	private Playground toPlayground(JSONObject jsonPlayground)
-			throws JSONException {
+	/**
+	 * Converts a playground in JSON to a Playground 
+	 * 
+	 * @param jsonPlayground
+	 * @return
+	 * @throws JSONException
+	 */
+	private Playground toPlayground(JSONObject jsonPlayground) throws JSONException {
 		String name = jsonPlayground.getString("name");
 		String description = jsonPlayground.getString("description");
 		int latitude = jsonPlayground.getInt("latitude");
@@ -195,135 +176,55 @@ public class WebPlaygroundDAO extends Activity implements PlaygroundDAO {
 
 		return new Playground(name, description, latitude, longitude);
 	}
+
+	/**
+	 * Converts JSON representing multiple playgrounds to 
+	 * @param jsonPlaygrounds
+	 * @param playgrounds
+	 */
+	private void convertJsonToPlaygrounds(String jsonPlaygrounds, Collection<Playground> playgrounds) {
+
+		try {
+			JSONArray jsonPlaygroundsArray = new JSONArray(jsonPlaygrounds);
+			int numOfPlaygrounds = jsonPlaygroundsArray.length();
+
+			JSONObject jsonPlayground = null;
+
+			for (int i = 0; i < numOfPlaygrounds; i++) {
+				jsonPlayground = jsonPlaygroundsArray.getJSONObject(i);
+				playgrounds.add(toPlayground(jsonPlayground));
+			}
+		} catch (JSONException e) {
+			Log.e(TAG, context.getString(R.string.exception_converting_json), e);
+		}
+	}
+
+	private URI getNearbyURL(double latitude, double longitude, int range) {
+		
+		URI uri = null;
+		
+		try {
+			List<NameValuePair> qparams = new ArrayList<NameValuePair>();
+			
+			qparams.add(new BasicNameValuePair(context.getString(R.string.latitude_param_name),
+					Double.toString(latitude)));
+			qparams.add(new BasicNameValuePair(context.getString(R.string.longitude_param_name),
+					Double.toString(longitude)));
+			qparams.add(new BasicNameValuePair(context.getString(R.string.range_param_name), Integer
+					.toString(range)));
+			
+			uri = URIUtils.createURI(protocol, host, port, servletPath, URLEncodedUtils.format(qparams, "UTF-8"), null);
+			
+
+		} catch (Exception e) {
+			Log.e(TAG, e.getLocalizedMessage(), e);
+		}
+		
+		return uri;
+	}
 	
 	@Override
-	public Collection<Playground> getNearby(Context context, GeoPoint location) {
-		return getNearby(context, location, MAX_QUANTITY);
-	}
-
-	@Override
-	public Collection<Playground> getNearby(Context context, GeoPoint location, int maxQuantity) {
-		playgrounds = new ArrayList<Playground>();
-		String result = swingset.getResources().getString(R.string.error);
-		HttpURLConnection httpConnection = null;
-		Log.d(TAG, "getPlaygrounds()");
-
-		try {
-			// Build query
-			URL url = new URL("http://swingsetweb.appspot.com/playground?" +
-							  TYPE_PARAM + "=" + NEARBY + "&" +
-							  LATITUDE_PARAM + "=" + location.getLatitudeE6() + "&" +
-							  LONGITUDE_PARAM + "=" + location.getLongitudeE6() + "&" +
-							  MAX_PARAM + "=" + Integer.toString(maxQuantity));
-			httpConnection = (HttpURLConnection) url.openConnection();
-			httpConnection.setConnectTimeout(15000);
-			httpConnection.setReadTimeout(15000);
-			StringBuilder response = new StringBuilder();
-
-			if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				// Read results from the query
-				BufferedReader input = new BufferedReader(
-						new InputStreamReader(httpConnection.getInputStream(),
-								"UTF-8"));
-				String strLine = null;
-				while ((strLine = input.readLine()) != null) {
-					response.append(strLine);
-				}
-				input.close();
-
-			}
-
-			// Parse to get translated text
-			JSONArray jsonPlaygrounds = new JSONArray(response.toString());
-			int numOfPlaygrounds = jsonPlaygrounds.length();
-
-			JSONObject jsonPlayground = null;
-
-			for (int i = 0; i < numOfPlaygrounds; i++) {
-				jsonPlayground = jsonPlaygrounds.getJSONObject(i);
-				playgrounds.add(toPlayground(jsonPlayground));
-			}
-
-		} catch (Exception e) {
-			Log.e(TAG, "Exception", e);
-			Intent errorIntent = new Intent(context, Playgrounds.class);
-			errorIntent.putExtra("Exception", e.getLocalizedMessage());
-			errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			context.startActivity(errorIntent);
-		} finally {
-			if (httpConnection != null) {
-				httpConnection.disconnect();
-			}
-		}
-
-		Log.d(TAG, "   -> returned " + result);
-		return playgrounds;
-		
-	}
-
-	@Override
-	public Collection<? extends Playground> getWithin(Context context,
-			GeoPoint topLeft, GeoPoint bottomRight, int maxQuantity) {
-		playgrounds = new ArrayList<Playground>();
-		String result = swingset.getResources().getString(R.string.error);
-		HttpURLConnection httpConnection = null;
-		Log.d(TAG, "getPlaygrounds()");
-
-		try {
-			// Check if task has been interrupted
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
-			}
-
-			// Build query
-			URL url = new URL("http://swingsetweb.appspot.com/playground?" +
-							  TYPE_PARAM + "=" + WITHIN + "&" +
-							  TOP_LEFT_LATITUDE_PARAM + "=" + topLeft.getLatitudeE6() / 1E6 + "&" +
-							  TOP_LEFT_LONGITUDE_PARAM + "=" + topLeft.getLongitudeE6() / 1E6 + "&" +
-							  BOTTOM_RIGHT_LATITUDE_PARAM + "=" + bottomRight.getLatitudeE6() / 1E6 + "&" +
-							  BOTTOM_RIGHT_LONGITUDE_PARAM + "=" + bottomRight.getLongitudeE6() / 1E6);
-			httpConnection = (HttpURLConnection) url.openConnection();
-			httpConnection.setConnectTimeout(15000);
-			httpConnection.setReadTimeout(15000);
-			StringBuilder response = new StringBuilder();
-
-			if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-				// Read results from the query
-				BufferedReader input = new BufferedReader(
-						new InputStreamReader(httpConnection.getInputStream(),
-								"UTF-8"));
-				String strLine = null;
-				while ((strLine = input.readLine()) != null) {
-					response.append(strLine);
-				}
-				input.close();
-
-			}
-
-			// Parse to get translated text
-			JSONArray jsonPlaygrounds = new JSONArray(response.toString());
-			int numOfPlaygrounds = jsonPlaygrounds.length();
-
-			JSONObject jsonPlayground = null;
-
-			for (int i = 0; i < numOfPlaygrounds; i++) {
-				jsonPlayground = jsonPlaygrounds.getJSONObject(i);
-				playgrounds.add(toPlayground(jsonPlayground));
-			}
-
-		} catch (Exception e) {
-			Log.e(TAG, "Exception", e);
-			Intent errorIntent = new Intent(context, Playgrounds.class);
-			errorIntent.putExtra("Exception", e.getLocalizedMessage());
-			errorIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			context.startActivity(errorIntent);
-		} finally {
-			if (httpConnection != null) {
-				httpConnection.disconnect();
-			}
-		}
-
-		Log.d(TAG, "   -> returned " + result);
-		return playgrounds;
+	public boolean deletePlayground(Context context, int id) {
+		return false;
 	}
 }

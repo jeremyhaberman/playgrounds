@@ -68,7 +68,7 @@ public class AddCurrentLocation extends AddPlayground implements OnClickListener
 		int latitude = (int) (myLocation.getLatitude() * 1E6);
 		int longitude = (int) (myLocation.getLongitude() * 1E6);
 
-		PlaygroundDAO playgroundDAO = new WebPlaygroundDAO(getParent());
+		PlaygroundDAO playgroundDAO = new WebPlaygroundDAO(getApplicationContext());
 		int result = playgroundDAO.createPlayground(name, description,
 				latitude, longitude);
 		handler.sendEmptyMessage(result);

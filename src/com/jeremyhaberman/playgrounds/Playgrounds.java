@@ -48,6 +48,7 @@ import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.preference.ListPreference;
 import android.util.Log;
@@ -77,9 +78,7 @@ public class Playgrounds extends MapActivity {
 	protected static final int ERROR_LOADING_PLAYGROUNDS = 1;
 	protected static final CharSequence ERROR_LOADING_PLAYGROUNDS_STRING = "Error loading playgrounds.";
 	protected static final int ERROR_FINDING_LOCATION = 0;
-	DownloadPlaygroundsTask downloadPlaygroundsTask;
-	Timer timer;
-	TimerTask getMyLocationTask;
+	private DownloadPlaygroundsTask downloadPlaygroundsTask;
 
 	/**
 	 * Instantiate the playgroundDAO for retrieving playground data and display
@@ -146,10 +145,10 @@ public class Playgrounds extends MapActivity {
 	protected int getZoom() {
 		int range = getRange();
 		switch (range) {
-		case 1:	return 15;
-		case 2: return 14;
-		case 5: return 13;
-		case 10: return 12;
+		case 1:	return 14;
+		case 2: return 13;
+		case 5: return 12;
+		case 10: return 11;
 		default: return 13;
 		}
 	}
@@ -189,7 +188,7 @@ public class Playgrounds extends MapActivity {
 			progressDialog.dismiss();
 		}
 	};
-	private int range;
+	
 
 	/**
 	 * Get playground data via background task and add it to the map
@@ -363,82 +362,41 @@ public class Playgrounds extends MapActivity {
 		return playgroundsLayer;
 	}
 
+	/**
+	 * Background task for retrieving playground data from the web
+	 * 
+	 * @author jeremyhaberman
+	 *
+	 */
 	private class DownloadPlaygroundsTask extends AsyncTask<GeoPoint, Void, Collection<Playground>> {
 
 		private static final String TAG = "DownloadPlaygroundsTask";
-		private static final String LATITUDE_PARAM = "latitude";
-		private static final String LONGITUDE_PARAM = "longitude";
-		private static final String MAX_PARAM = "max";
-		private static final String TYPE_PARAM = "type";
-		private static final String NEARBY = "nearby";
-		private static final int MAX_QUANTITY = 5;
-		private static final String WITHIN = "within";
-		private static final String RANGE = "range";
-		private static final String RANGE_PARAM = "range";
 
+		/**
+		 * Execute this in the UI thread before starting background task
+		 */
 		protected void onPreExecute() {
 			displayLoadingPlaygroundsProgressDialog();
 		}
 
+		/**
+		 * Background work to to get playground data from the web
+		 */
 		@Override
 		protected Collection<Playground> doInBackground(GeoPoint... params) {
 			GeoPoint location = params[0];
-			Collection<Playground> playgrounds = new ArrayList<Playground>();
-			HttpURLConnection httpConnection = null;
-			Log.d(TAG, "getPlaygrounds()");
-
-			try {
-				// Build query
-				URL url = new URL("http://swingsetweb.appspot.com/playground?" + TYPE_PARAM + "="
-						+ RANGE + "&" + LATITUDE_PARAM + "=" + location.getLatitudeE6() / 1E6 + "&"
-						+ LONGITUDE_PARAM + "=" + location.getLongitudeE6() / 1E6 + "&" + RANGE_PARAM + "="
-						+ getRange());
-				httpConnection = (HttpURLConnection) url.openConnection();
-				httpConnection.setConnectTimeout(10000);
-				httpConnection.setReadTimeout(10000);
-				StringBuilder response = new StringBuilder();
-
-				if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-					// Read results from the query
-					BufferedReader input = new BufferedReader(new InputStreamReader(
-							httpConnection.getInputStream(), "UTF-8"));
-					String strLine = null;
-					while ((strLine = input.readLine()) != null) {
-						response.append(strLine);
-					}
-					input.close();
-
-				}
-
-				// Parse to get translated text
-				JSONArray jsonPlaygrounds = new JSONArray(response.toString());
-				int numOfPlaygrounds = jsonPlaygrounds.length();
-
-				JSONObject jsonPlayground = null;
-
-				for (int i = 0; i < numOfPlaygrounds; i++) {
-					jsonPlayground = jsonPlaygrounds.getJSONObject(i);
-					playgrounds.add(toPlayground(jsonPlayground));
-				}
-
-			} catch (Exception e) {
-				Log.e(TAG, "Exception", e);
-			} finally {
-				if (httpConnection != null) {
-					httpConnection.disconnect();
-				}
-			}
-
-			return playgrounds;
+			PlaygroundDAO playgroundDAO = new WebPlaygroundDAO(getApplicationContext());
+			return playgroundDAO.getNearby(location, getRange());
 		}
-
-		
 
 		@Override
 		protected void onCancelled() {
 			super.onCancelled();
 		}
 
+		/**
+		 * Execute this back on the UI thread once this task is complete
+		 */
 		@Override
 		protected void onPostExecute(Collection<Playground> playgrounds) {
 			if (playgrounds.size() == 0) {
@@ -448,16 +406,6 @@ public class Playgrounds extends MapActivity {
 				mHandler.sendEmptyMessage(0);
 			}
 		}
-
-		private Playground toPlayground(JSONObject jsonPlayground) throws JSONException {
-			String name = jsonPlayground.getString("name");
-			String description = jsonPlayground.getString("description");
-			int latitude = jsonPlayground.getInt("latitude");
-			int longitude = jsonPlayground.getInt("longitude");
-
-			return new Playground(name, description, latitude, longitude);
-		}
-
 	}
 
 	@Override

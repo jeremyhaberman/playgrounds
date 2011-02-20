@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="protocol">http</string>
+    <string name="host">playgroundsweb.appspot.com</string>
+    <string name="playground_servlet">playground</string>
+    <string name="base_uri">http://playgroundsweb.appspot.com/playground</string>
+    <string name="latitude_param_name">latitude</string>
+    <string name="longitude_param_name">longitude</string>
+    <string name="range_param_name">range</string>
+    <string name="playground_servlet_path">playground</string>
+    <integer name="port">-1</integer>
+</resources>
